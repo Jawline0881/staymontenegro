@@ -191,7 +191,7 @@ function cancellationEmail(userEmail, listing, booking, refundAmount) {
 
 // ─── MongoDB ──────────────────────────────────────────────────────────────────
 if (require.main === module && process.env.NODE_ENV !== 'test') {
-  mongoose.connect(MONGO_URL)
+  mongoose.connect(MONGO_URL, { family: 4 })
     .then(() => console.log('✅ MongoDB connected'))
     .catch(err => console.error('❌ MongoDB error:', err.message));
 }
