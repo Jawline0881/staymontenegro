@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StayMontenegro — Find Your Perfect Stay</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    .card { position: relative; }
+    .fav-btn {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.9); cursor: pointer; font-size: 19px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18); transition: transform 0.12s, background 0.15s; padding: 0;
+    }
+    .fav-btn:hover { transform: scale(1.12); background: #fff; }
+    .view-toggle { display:flex; gap:8px; }
+    .view-toggle button { padding:8px 16px; font-size:13px; }
+    #mapView { height: 540px; border-radius: 14px; margin-bottom: 24px; display:none; z-index:0; }
+    .filter-bar {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 18px 22px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 140px; }
+    .filter-group label { font-size: 12px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-group input, .filter-group select { padding: 8px 12px; font-size: 14px; }
+    .amenity-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .amenity-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd;
+      font-size: 13px; font-weight: 600; cursor: pointer; background: white;
+      transition: all 0.15s; color: #444;
+    }
+    .amenity-chip:hover  { border-color: #ff385c; color: #ff385c; }
+    .amenity-chip.active { border-color: #ff385c; background: #fff0f3; color: #ff385c; }
+    .star { color: #f5a623; font-size: 13px; }
+    .card-rating { font-size: 13px; color: #555; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="/add.html">+ Add Listing</a>
+    <a href="/host.html" data-auth-only style="display:none">Host</a>
+    <a href="/saved.html" data-auth-only style="display:none">❤️ Saved</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <a href="/mybookings.html" id="myBookingsLink" style="display:none">My Bookings</a>
+    <a href="/auth.html" id="authLink">Login / Register</a>
+    <button id="logoutBtn" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Find your perfect stay in Montenegro 🇲🇪</h1>
+  <p>Apartments, houses & rooms across Kotor, Budva, Podgorica and beyond</p>
+  <div class="search-bar">
+    <input id="searchInput" type="text" placeholder="Search by city — Kotor, Budva…" oninput="applyFilters()">
+    <button onclick="applyFilters()">Search</button>
+  </div>
+</section>
+
+<div class="container">
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Check-in</label>
+      <input type="date" id="checkIn" onchange="onDatesChange()">
+    </div>
+    <div class="filter-group">
+      <label>Check-out</label>
+      <input type="date" id="checkOut" onchange="onDatesChange()">
+    </div>
+    <div class="filter-group">
+      <label>Min price (€/night)</label>
+      <input type="number" id="minPrice" min="0" placeholder="0" oninput="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <label>Max price (€/night)</label>
+      <input type="number" id="maxPrice" min="0" placeholder="Any" oninput="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <label>Guests</label>
+      <input type="number" id="guests" min="1" placeholder="Any" oninput="applyFilters()">
+    </div>
+    <div style="margin-left:auto; display:flex; gap:10px; align-items:flex-end;">
+      <div class="view-toggle">
+        <button id="btnGrid" onclick="setView('grid')">▦ Grid</button>
+        <button id="btnMap" class="btn-secondary" onclick="setView('map')">🗺 Map</button>
+      </div>
+      <button class="btn-secondary" onclick="clearFilters()" style="padding:9px 16px;font-size:13px">Clear filters</button>
+    </div>
+  </div>
+  <div id="dateNote" style="display:none; margin:-12px 0 20px; font-size:13px; color:#ff385c; font-weight:600;"></div>
+
+  <!-- Amenity chips -->
+  <div class="amenity-filters" id="amenityChips"></div>
+
+  <p class="section-title" id="sectionTitle">All Listings</p>
+  <div id="mapView"></div>
+  <div class="grid" id="listings">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (token) {
+    document.getElementById('authLink').style.display       = 'none';
+    document.getElementById('logoutBtn').style.display      = 'inline-block';
+    document.getElementById('myBookingsLink').style.display = 'inline-block';
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    toast('Logged out', 'info');
+    setTimeout(() => window.location.reload(), 600);
+  }
+
+  let selectedAmenities = new Set();
+
+  // Load amenity chips
+  async function loadAmenityChips() {
+    try {
+      const res  = await fetch('/api/amenities');
+      const list = await res.json();
+      const container = document.getElementById('amenityChips');
+      container.innerHTML = list.map(a => `
+        <button class="amenity-chip" onclick="toggleAmenity('${a}', this)">${a}</button>
+      `).join('');
+    } catch {}
+  }
+
+  function toggleAmenity(name, el) {
+    if (selectedAmenities.has(name)) {
+      selectedAmenities.delete(name);
+      el.classList.remove('active');
+    } else {
+      selectedAmenities.add(name);
+      el.classList.add('active');
+    }
+    applyFilters();
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('minPrice').value    = '';
+    document.getElementById('maxPrice').value    = '';
+    document.getElementById('guests').value      = '';
+    document.getElementById('checkIn').value     = '';
+    document.getElementById('checkOut').value    = '';
+    document.getElementById('dateNote').style.display = 'none';
+    selectedAmenities.clear();
+    document.querySelectorAll('.amenity-chip').forEach(c => c.classList.remove('active'));
+    applyFilters();
+  }
+
+  // ── Date-range search (Feature #7) ──
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('checkIn').min  = todayStr;
+  document.getElementById('checkOut').min = todayStr;
+  function onDatesChange() {
+    const ci = document.getElementById('checkIn').value;
+    const co = document.getElementById('checkOut').value;
+    if (ci) document.getElementById('checkOut').min = ci;
+    applyFilters();
+  }
+
+  function stars(avg, count) {
+    if (!count) return '';
+    const full   = Math.round(avg);
+    const filled = '★'.repeat(full);
+    const empty  = '☆'.repeat(5 - full);
+    return `<p class="card-rating"><span class="star">${filled}${empty}</span> ${avg} <span style="color:#aaa">(${count})</span></p>`;
+  }
+
+  // ── View toggle (grid / map) ───────────────────────────────────────────────
+  let currentView = 'grid';
+  let mapInstance = null, mapMarkers = [];
+  let lastData = [];
+
+  function setView(view) {
+    currentView = view;
+    document.getElementById('btnGrid').className = view === 'grid' ? '' : 'btn-secondary';
+    document.getElementById('btnMap').className  = view === 'map'  ? '' : 'btn-secondary';
+    document.getElementById('listings').style.display = view === 'grid' ? 'grid' : 'none';
+    document.getElementById('mapView').style.display  = view === 'map'  ? 'block' : 'none';
+    if (view === 'map') renderMap();
+  }
+
+  function renderMap() {
+    if (!mapInstance) {
+      mapInstance = L.map('mapView').setView([42.78, 19.24], 7); // default: country-ish
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19,
+      }).addTo(mapInstance);
+    }
+    setTimeout(() => mapInstance.invalidateSize(), 50);
+    mapMarkers.forEach(m => mapInstance.removeLayer(m));
+    mapMarkers = [];
+
+    const pts = lastData.filter(l => typeof l.lat === 'number' && typeof l.lng === 'number');
+    if (!pts.length) return;
+
+    const bounds = [];
+    pts.forEach(l => {
+      const icon = L.divIcon({
+        html: `<div style="background:#ff385c;color:white;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3)">€${l.price}</div>`,
+        iconSize: [40, 24], iconAnchor: [20, 12], className: '',
+      });
+      const m = L.marker([l.lat, l.lng], { icon }).addTo(mapInstance)
+        .bindPopup(`<a href="/listing.html?id=${l._id}" style="font-weight:700;color:#ff385c">${l.title}</a><br>${l.city} · €${l.price}/night`);
+      mapMarkers.push(m);
+      bounds.push([l.lat, l.lng]);
+    });
+    if (bounds.length) mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+  }
+
+  // ── Favorites ───────────────────────────────────────────────────────────────
+  async function toggleFav(listingId, ev) {
+    ev.preventDefault(); ev.stopPropagation();
+    const nowFav = await window.favHelper.toggle(listingId);
+    if (nowFav === null) return;
+    const btn = ev.currentTarget;
+    btn.textContent = nowFav ? '❤️' : '🤍';
+    toast(nowFav ? 'Saved to favorites' : 'Removed from saved', nowFav ? 'success' : 'info');
+  }
+
+  async function applyFilters() {
+    const city     = document.getElementById('searchInput').value.trim();
+    const minPrice = document.getElementById('minPrice').value;
+    const maxPrice = document.getElementById('maxPrice').value;
+    const guests   = document.getElementById('guests').value;
+    const checkIn  = document.getElementById('checkIn').value;
+    const checkOut = document.getElementById('checkOut').value;
+    const amenStr  = [...selectedAmenities].join(',');
+    const hasDates = checkIn && checkOut && new Date(checkOut) > new Date(checkIn);
+
+    const params = new URLSearchParams();
+    if (city)     params.set('city',     city);
+    if (minPrice) params.set('minPrice', minPrice);
+    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (guests)   params.set('guests',   guests);
+    if (amenStr)  params.set('amenities', amenStr);
+    if (hasDates) { params.set('checkIn', checkIn); params.set('checkOut', checkOut); }
+
+    // date note
+    const note = document.getElementById('dateNote');
+    if (hasDates) {
+      const nights = Math.round((new Date(checkOut) - new Date(checkIn)) / 864e5);
+      note.textContent = `Showing places available for ${nights} night${nights !== 1 ? 's' : ''} · prices reflect your dates`;
+      note.style.display = 'block';
+    } else { note.style.display = 'none'; }
+
+    const container = document.getElementById('listings');
+    const title     = document.getElementById('sectionTitle');
+    if (currentView === 'grid') container.innerHTML = '<div class="spinner"></div>';
+
+    try {
+      await window.favHelper.loadIds();
+      const res  = await fetch(`/api/listings?${params}`);
+      const data = await res.json();
+      lastData = data;
+
+      title.textContent = city ? `Results for "${city}"` : (hasDates ? 'Available Stays' : 'All Listings');
+
+      if (!data.length) {
+        container.innerHTML = `<div class="empty-state"><div class="emoji">🏠</div><p>${hasDates ? 'Nothing available for those dates.' : 'No listings match your filters.'}</p></div>`;
+        if (currentView === 'map') renderMap();
+        return;
+      }
+
+      container.innerHTML = '';
+      data.forEach(item => {
+        const isFav = window.favHelper.ids.has(String(item._id));
+        // Price line: stay total when dates picked, else per-night
+        let priceHtml;
+        if (item.quote) {
+          const seasonal = item.quote.avgNightly !== item.price;
+          priceHtml = `<p class="card-price">€${item.quote.total} <span>total · ${item.quote.nights} night${item.quote.nights !== 1 ? 's' : ''}</span>${seasonal ? ' <span style="color:#ff385c">• seasonal</span>' : ''}</p>`;
+        } else {
+          priceHtml = `<p class="card-price">€${item.price} <span>/ night</span></p>`;
+        }
+        const a = document.createElement('a');
+        a.className = 'card';
+        a.href = `/listing.html?id=${item._id}${item.quote ? `&checkIn=${checkIn}&checkOut=${checkOut}` : ''}`;
+        a.innerHTML = `
+          ${token ? `<button class="fav-btn" title="Save" onclick="toggleFav('${item._id}', event)">${isFav ? '❤️' : '🤍'}</button>` : ''}
+          <img src="${item.image || 'https://placehold.co/400x250?text=No+Image'}" alt="${item.title}" loading="lazy">
+          <div class="card-content">
+            <h3>${item.title}</h3>
+            <p class="card-city">📍 ${item.city} · 👥 up to ${item.maxGuests || 1}</p>
+            ${stars(item.avgRating, item.reviewCount)}
+            <p class="card-desc">${item.description || ''}</p>
+            ${priceHtml}
+          </div>`;
+        container.appendChild(a);
+      });
+
+      if (currentView === 'map') renderMap();
+    } catch {
+      container.innerHTML = `<div class="empty-state"><p>Failed to load listings. Is the server running?</p></div>`;
+    }
+  }
+
+  loadAmenityChips();
+  applyFilters();
+</script>
+
+</body>
+</html>

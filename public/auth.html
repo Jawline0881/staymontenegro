@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: white;
+      color: #444;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 11px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s, box-shadow 0.15s;
+      margin-bottom: 18px;
+    }
+    .google-btn:hover { background: #f8f8f8; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .google-btn img   { width: 20px; height: 20px; }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      color: #bbb;
+      font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links"><a href="/">← Back to listings</a></div>
+</header>
+
+<div class="form-box">
+  <div class="tabs">
+    <div class="tab active" id="tabLogin"  onclick="switchTab('login')">Login</div>
+    <div class="tab"        id="tabReg"    onclick="switchTab('register')">Register</div>
+  </div>
+
+  <div id="alertBox" class="alert"></div>
+
+  <!-- Google Sign-In -->
+  <a href="/auth/google" class="google-btn">
+    <img src="https://www.google.com/favicon.ico" alt="Google">
+    Continue with Google
+  </a>
+  <div class="divider">or</div>
+
+  <!-- Login form -->
+  <div id="loginForm">
+    <div class="form-group">
+      <label>Email</label>
+      <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-block" onclick="login()">Login</button>
+  </div>
+
+  <!-- Register form -->
+  <div id="registerForm" style="display:none">
+    <div class="form-group">
+      <label>Email</label>
+      <input id="regEmail" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="regPass" type="password" placeholder="Minimum 6 characters" autocomplete="new-password">
+    </div>
+    <button class="btn-block" onclick="register()">Create Account</button>
+  </div>
+</div>
+
+<script src="toast.js"></script>
+<script>
+  if (localStorage.getItem('token')) window.location.href = '/';
+
+  // Show error from Google OAuth redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('error') === 'google_not_configured') {
+    setTimeout(() => toast('Google Sign-In not configured on this server', 'warning'), 300);
+  }
+  if (urlParams.get('error') === 'google') {
+    setTimeout(() => toast('Google Sign-In failed. Please try again.', 'error'), 300);
+  }
+
+  function switchTab(tab) {
+    document.getElementById('loginForm').style.display    = tab === 'login'    ? '' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabReg').classList.toggle('active',   tab === 'register');
+    document.getElementById('alertBox').className = 'alert';
+  }
+
+  function showAlert(msg, type = 'error') {
+    const el = document.getElementById('alertBox');
+    el.textContent = msg;
+    el.className = `alert alert-${type} show`;
+  }
+
+  async function login() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPass').value;
+    if (!email || !password) return showAlert('Please fill in all fields');
+
+    try {
+      const res  = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) return showAlert(data.error || 'Login failed');
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userEmail', email);
+      toast('Logged in!', 'success');
+      setTimeout(() => window.location.href = '/', 700);
+    } catch {
+      showAlert('Network error — is the server running?');
+    }
+  }
+
+  async function register() {
+    const email    = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPass').value;
+    if (!email || !password)  return showAlert('Please fill in all fields');
+    if (password.length < 6)  return showAlert('Password must be at least 6 characters');
+
+    try {
+      const res  = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) return showAlert(data.error || 'Registration failed');
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userEmail', email);
+      toast('Account created!', 'success');
+      setTimeout(() => window.location.href = '/', 700);
+    } catch {
+      showAlert('Network error — is the server running?');
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    document.getElementById('loginForm').style.display !== 'none' ? login() : register();
+  });
+</script>
+
+</body>
+</html>

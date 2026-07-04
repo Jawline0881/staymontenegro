@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .msg-layout { display:grid; grid-template-columns:320px 1fr; gap:20px; min-height:calc(100vh - 160px); }
+    .thread-list { background:white; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,0.07); overflow:hidden; align-self:start; }
+    .thread { display:flex; gap:12px; padding:14px 16px; cursor:pointer; border-bottom:1px solid #f0f0f0; transition:background .12s; }
+    .thread:hover { background:#fafafa; }
+    .thread.active { background:#fff0f3; }
+    .thread img { width:46px; height:46px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+    .thread .t-title { font-weight:700; font-size:14px; margin-bottom:2px; }
+    .thread .t-sub { font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+    .t-unread { background:#ff385c; color:#fff; border-radius:10px; padding:0 7px; font-size:11px; font-weight:700; margin-left:auto; align-self:center; }
+    .conv { background:white; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,0.07); display:flex; flex-direction:column; }
+    .conv-head { padding:16px 20px; border-bottom:1px solid #eee; font-weight:700; }
+    .conv-body { flex:1; padding:20px; overflow-y:auto; max-height:55vh; display:flex; flex-direction:column; gap:10px; }
+    .bubble { max-width:70%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.4; }
+    .bubble.me { align-self:flex-end; background:#ff385c; color:white; border-bottom-right-radius:4px; }
+    .bubble.them { align-self:flex-start; background:#f0f0f0; color:#222; border-bottom-left-radius:4px; }
+    .bubble .time { display:block; font-size:10px; opacity:.7; margin-top:4px; }
+    .conv-input { display:flex; gap:10px; padding:14px 16px; border-top:1px solid #eee; }
+    .conv-input input { flex:1; }
+    .conv-input button { padding:11px 22px; }
+    .conv-empty { display:flex; align-items:center; justify-content:center; color:#aaa; flex:1; padding:60px; text-align:center; }
+    @media (max-width:760px){ .msg-layout{ grid-template-columns:1fr; } .conv{ display:none; } .conv.show{ display:flex; } .thread-list.hide{ display:none; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/">← Home</a>
+    <a href="/mybookings.html">My Bookings</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2 class="section-title">💬 Messages</h2>
+  <div class="msg-layout">
+    <div class="thread-list" id="threadList"><div class="spinner"></div></div>
+    <div class="conv" id="conv">
+      <div class="conv-empty" id="convEmpty">Select a conversation to start chatting.</div>
+      <div id="convInner" style="display:none; flex:1; display:none; flex-direction:column;">
+        <div class="conv-head" id="convHead"></div>
+        <div class="conv-body" id="convBody"></div>
+        <div class="conv-input">
+          <input id="msgInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button onclick="sendMsg()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+  function logout() { localStorage.removeItem('token'); window.location.href = '/'; }
+  function fmtTime(d){ return new Date(d).toLocaleString('en-GB',{ day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
+
+  let myId = null, current = null;
+
+  async function init() {
+    const me = await (await fetch('/api/me', { headers:{ Authorization: token } })).json();
+    myId = me._id;
+    await loadThreads();
+    // deep link: ?listing=<id>&with=<userId>
+    const p = new URLSearchParams(location.search);
+    if (p.get('listing') && p.get('with')) openConv(p.get('listing'), p.get('with'), '');
+  }
+
+  async function loadThreads() {
+    const el = document.getElementById('threadList');
+    try {
+      const data = await (await fetch('/api/messages/threads', { headers:{ Authorization: token } })).json();
+      if (!data.length) { el.innerHTML = `<div style="padding:30px;text-align:center;color:#aaa">No conversations yet.<br><br>Message a host from any listing page.</div>`; return; }
+      el.innerHTML = data.map(t => `
+        <div class="thread" data-l="${t.listing._id}" data-o="${t.other._id}" onclick="openConv('${t.listing._id}','${t.other._id}','${(t.other.displayName||t.other.email||'Guest').replace(/'/g,'')}')">
+          <img src="${t.listing.image || 'https://placehold.co/100x100?text=🏠'}" alt="">
+          <div style="min-width:0">
+            <div class="t-title">${t.listing.title}</div>
+            <div class="t-sub">${t.other.displayName || t.other.email || 'Guest'}: ${t.lastMessage}</div>
+          </div>
+          ${t.unread ? `<span class="t-unread">${t.unread}</span>` : ''}
+        </div>`).join('');
+    } catch { el.innerHTML = '<div style="padding:20px;color:#999">Failed to load.</div>'; }
+  }
+
+  async function openConv(listingId, otherId, otherName) {
+    current = { listingId, otherId, otherName };
+    document.querySelectorAll('.thread').forEach(t => t.classList.toggle('active', t.dataset.l === listingId && t.dataset.o === otherId));
+    document.getElementById('convEmpty').style.display = 'none';
+    document.getElementById('convInner').style.display = 'flex';
+    document.getElementById('convHead').textContent = otherName ? `Chat with ${otherName}` : 'Conversation';
+    document.getElementById('conv').classList.add('show');
+    document.getElementById('threadList').classList.add('hide');
+    await loadConv();
+  }
+
+  async function loadConv() {
+    if (!current) return;
+    const body = document.getElementById('convBody');
+    try {
+      const msgs = await (await fetch(`/api/messages/thread/${current.listingId}/${current.otherId}`, { headers:{ Authorization: token } })).json();
+      body.innerHTML = msgs.map(m => `
+        <div class="bubble ${m.fromId === myId ? 'me' : 'them'}">
+          ${m.body}<span class="time">${fmtTime(m.createdAt)}</span>
+        </div>`).join('');
+      body.scrollTop = body.scrollHeight;
+      // refresh badge + thread unread markers
+      if (window.favHelper) {} // noop
+      loadThreads();
+    } catch { body.innerHTML = '<p style="color:#999">Failed to load conversation.</p>'; }
+  }
+
+  async function sendMsg() {
+    const input = document.getElementById('msgInput');
+    const body  = input.value.trim();
+    if (!body || !current) return;
+    input.value = '';
+    try {
+      const res = await fetch('/api/messages', {
+        method:'POST', headers:{ 'Content-Type':'application/json', Authorization: token },
+        body: JSON.stringify({ listingId: current.listingId, toId: current.otherId, body }),
+      });
+      if (!res.ok) { const d = await res.json(); toast(d.error || 'Failed to send', 'error'); return; }
+      loadConv();
+    } catch { toast('Network error', 'error'); }
+  }
+
+  init();
+</script>
+
+</body>
+</html>

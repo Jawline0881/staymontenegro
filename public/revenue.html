@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earnings & Revenue — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ── Stat Cards ── */
+    .stat-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .stat {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 20px 24px;
+      flex: 1;
+      min-width: 150px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+    .stat .num {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ff385c;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .stat .lbl {
+      font-size: 12px;
+      color: #888;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .stat .icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Section Cards ── */
+    .section-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .section-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Chart ── */
+    .chart-wrapper {
+      position: relative;
+      height: 280px;
+    }
+
+    /* ── Tables ── */
+    .revenue-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .revenue-table th {
+      background: #f8f8f8;
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .revenue-table td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #f5f5f5;
+      vertical-align: middle;
+      color: #333;
+    }
+    .revenue-table tr:last-child td {
+      border-bottom: none;
+    }
+    .revenue-table tr:hover td {
+      background: #fafafa;
+    }
+    .revenue-table .amount {
+      font-weight: 700;
+      color: #222;
+    }
+    .revenue-table .gross {
+      color: #888;
+      font-size: 13px;
+    }
+    .listing-name {
+      font-weight: 600;
+      color: #222;
+    }
+    .listing-city {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* ── Status Badges ── */
+    .badge-paid     { background: #d4edda; color: #155724; }
+    .badge-pending  { background: #fff3cd; color: #856404; }
+    .badge-cancelled { background: #f8d7da; color: #721c24; }
+
+    /* ── Empty state ── */
+    .empty-table {
+      text-align: center;
+      padding: 48px 20px;
+      color: #bbb;
+    }
+    .empty-table .empty-icon {
+      font-size: 44px;
+      margin-bottom: 12px;
+    }
+    .empty-table p {
+      font-size: 15px;
+      color: #aaa;
+    }
+
+    /* ── Page header row ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .page-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #222;
+    }
+    .nav-pill {
+      display: flex;
+      gap: 8px;
+    }
+    .nav-pill a {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: #f0f0f0;
+      transition: background 0.15s;
+    }
+    .nav-pill a:hover { background: #e2e2e2; }
+    .nav-pill a.active {
+      background: #ff385c;
+      color: white;
+    }
+
+    /* ── Loading skeleton ── */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .stat { min-width: calc(50% - 8px); flex: none; }
+      .stat .num { font-size: 22px; }
+      .chart-wrapper { height: 200px; }
+      .revenue-table th:nth-child(3),
+      .revenue-table td:nth-child(3) { display: none; }
+      .section-card { padding: 16px; }
+    }
+    @media (max-width: 450px) {
+      .stat { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/">← Home</a>
+    <a href="/host.html">Dashboard</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="page-header">
+    <h2>💰 Earnings & Revenue</h2>
+    <div class="nav-pill">
+      <a href="/host.html">My Listings</a>
+      <a href="/revenue.html" class="active">Revenue</a>
+    </div>
+  </div>
+
+  <!-- ── Stat Cards ── -->
+  <div class="stat-row" id="statRow">
+    <div class="stat">
+      <div class="icon">💎</div>
+      <div class="num" id="statAllTime">—</div>
+      <div class="lbl">All-Time Earnings</div>
+    </div>
+    <div class="stat">
+      <div class="icon">📅</div>
+      <div class="num" id="statThisMonth">—</div>
+      <div class="lbl">This Month</div>
+    </div>
+    <div class="stat">
+      <div class="icon">📆</div>
+      <div class="num" id="statLastMonth">—</div>
+      <div class="lbl">Last Month</div>
+    </div>
+    <div class="stat">
+      <div class="icon">⏳</div>
+      <div class="num" id="statPending">—</div>
+      <div class="lbl">Pending Payout</div>
+    </div>
+    <div class="stat">
+      <div class="icon">🏨</div>
+      <div class="num" id="statBookings">—</div>
+      <div class="lbl">Total Bookings</div>
+    </div>
+    <div class="stat">
+      <div class="icon">📊</div>
+      <div class="num" id="statOccupancy">—</div>
+      <div class="lbl">Occupancy Rate</div>
+    </div>
+  </div>
+
+  <!-- ── Monthly Earnings Chart ── -->
+  <div class="section-card">
+    <h3>📈 Monthly Earnings — Last 12 Months</h3>
+    <div class="chart-wrapper">
+      <div class="spinner" id="chartSpinner"></div>
+      <canvas id="earningsChart" style="display:none"></canvas>
+    </div>
+    <div id="chartEmpty" style="display:none" class="empty-table">
+      <div class="empty-icon">📉</div>
+      <p>No earnings data yet. Once you receive confirmed bookings, your chart will appear here.</p>
+    </div>
+  </div>
+
+  <!-- ── Per-Listing Breakdown ── -->
+  <div class="section-card">
+    <h3>🏠 Revenue by Listing</h3>
+    <div id="listingTableWrap">
+      <div class="spinner" id="listingSpinner"></div>
+    </div>
+  </div>
+
+  <!-- ── Payout History ── -->
+  <div class="section-card">
+    <h3>💳 Payout History</h3>
+    <div id="payoutTableWrap">
+      <div class="spinner" id="payoutSpinner"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+
+  const authHeaders = { Authorization: token };
+
+  // ── Formatting helpers ──────────────────────────────────────────────────────
+  function fmtMoney(val, currency) {
+    const sym = currency === 'USD' ? '$' : '€';
+    if (val === undefined || val === null) return sym + '0';
+    return sym + Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function fmtMonthLabel(year, month) {
+    return new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+  }
+
+  // ── Load Summary Stats ───────────────────────────────────────────────────────
+  async function loadSummary() {
+    try {
+      const res = await fetch('/api/host/revenue/summary', { headers: authHeaders });
+      if (!res.ok) throw new Error('Failed');
+      const d = await res.json();
+      const cur = d.currency || 'EUR';
+      document.getElementById('statAllTime').textContent   = fmtMoney(d.allTime, cur);
+      document.getElementById('statThisMonth').textContent = fmtMoney(d.thisMonth, cur);
+      document.getElementById('statLastMonth').textContent = fmtMoney(d.lastMonth, cur);
+      document.getElementById('statPending').textContent   = fmtMoney(d.pendingPayout, cur);
+      document.getElementById('statBookings').textContent  = d.totalBookings ?? 0;
+      document.getElementById('statOccupancy').textContent = (d.occupancyRate != null ? Math.round(d.occupancyRate) + '%' : '—');
+    } catch (e) {
+      console.error('Summary error:', e);
+      // Leave dashes — non-fatal
+    }
+  }
+
+  // ── Load Monthly Chart ───────────────────────────────────────────────────────
+  async function loadMonthlyChart() {
+    const spinner = document.getElementById('chartSpinner');
+    const canvas  = document.getElementById('earningsChart');
+    const empty   = document.getElementById('chartEmpty');
+    try {
+      const res = await fetch('/api/host/revenue/monthly', { headers: authHeaders });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+
+      spinner.style.display = 'none';
+
+      if (!data || data.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      canvas.style.display = 'block';
+
+      const labels   = data.map(m => fmtMonthLabel(m.year, m.month));
+      const earnings = data.map(m => m.earnings || 0);
+
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Earnings (€)',
+            data: earnings,
+            backgroundColor: earnings.map((v, i) =>
+              i === earnings.length - 1
+                ? 'rgba(255, 56, 92, 0.85)'
+                : 'rgba(255, 56, 92, 0.38)'
+            ),
+            borderColor: 'rgba(255, 56, 92, 0.9)',
+            borderWidth: 2,
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ' €' + Number(ctx.parsed.y).toLocaleString('en-US', { minimumFractionDigits: 0 })
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: {
+                callback: v => '€' + (v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v),
+                font: { size: 12 }
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+    } catch (e) {
+      spinner.style.display = 'none';
+      empty.style.display = 'block';
+      console.error('Chart error:', e);
+    }
+  }
+
+  // ── Load Per-Listing Breakdown ───────────────────────────────────────────────
+  async function loadByListing() {
+    const wrap    = document.getElementById('listingTableWrap');
+    try {
+      const res = await fetch('/api/host/revenue/by-listing', { headers: authHeaders });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        wrap.innerHTML = `
+          <div class="empty-table">
+            <div class="empty-icon">🏠</div>
+            <p>No listing revenue yet. Earnings will appear here once you receive confirmed bookings.</p>
+          </div>`;
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div style="overflow-x:auto">
+          <table class="revenue-table">
+            <thead>
+              <tr>
+                <th>Listing</th>
+                <th>Bookings</th>
+                <th>Gross Revenue</th>
+                <th>Your Earnings</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(row => `
+                <tr>
+                  <td>
+                    <div class="listing-name">${escHtml(row.listing?.title || 'Unnamed Listing')}</div>
+                    <div class="listing-city">📍 ${escHtml(row.listing?.city || '')}</div>
+                  </td>
+                  <td>${row.bookings ?? 0}</td>
+                  <td class="gross">${fmtMoney(row.grossRevenue)}</td>
+                  <td class="amount">${fmtMoney(row.earnings)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (e) {
+      wrap.innerHTML = `<p style="color:#999;text-align:center;padding:40px">Failed to load listing breakdown. Please try again later.</p>`;
+      console.error('By-listing error:', e);
+    }
+  }
+
+  // ── Load Payout History ──────────────────────────────────────────────────────
+  async function loadPayouts() {
+    const wrap = document.getElementById('payoutTableWrap');
+    try {
+      const res = await fetch('/api/host/revenue/payouts', { headers: authHeaders });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      const payouts = data.payouts || [];
+
+      if (payouts.length === 0) {
+        wrap.innerHTML = `
+          <div class="empty-table">
+            <div class="empty-icon">💳</div>
+            <p>No payouts yet. Your payout history will appear here once bookings are completed.</p>
+          </div>`;
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div style="overflow-x:auto">
+          <table class="revenue-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Listing</th>
+                <th>Nights</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${payouts.map(p => {
+                const nights = p.bookingId?.nights ?? nightsFromDates(p.bookingId?.checkIn, p.bookingId?.checkOut);
+                const statusClass = p.status === 'paid' ? 'badge-paid'
+                                  : p.status === 'cancelled' ? 'badge-cancelled'
+                                  : 'badge-pending';
+                const statusLabel = p.status === 'paid' ? '✅ Paid'
+                                  : p.status === 'cancelled' ? '❌ Cancelled'
+                                  : '⏳ Pending';
+                return `
+                  <tr>
+                    <td style="white-space:nowrap;color:#666">${fmtDate(p.createdAt)}</td>
+                    <td>
+                      <div class="listing-name">${escHtml(p.listingId?.title || 'Listing removed')}</div>
+                      ${p.bookingId?.checkIn ? `<div class="listing-city">${fmtDate(p.bookingId.checkIn)} → ${fmtDate(p.bookingId.checkOut)}</div>` : ''}
+                    </td>
+                    <td>${nights ?? '—'}</td>
+                    <td class="amount">${fmtMoney(p.hostEarnings)}</td>
+                    <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ${data.total > payouts.length ? `<p style="text-align:center;color:#aaa;font-size:13px;padding:12px 0">Showing ${payouts.length} of ${data.total} payouts</p>` : ''}`;
+    } catch (e) {
+      wrap.innerHTML = `<p style="color:#999;text-align:center;padding:40px">Failed to load payout history. Please try again later.</p>`;
+      console.error('Payouts error:', e);
+    }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function nightsFromDates(checkIn, checkOut) {
+    if (!checkIn || !checkOut) return null;
+    const ms = new Date(checkOut) - new Date(checkIn);
+    return Math.round(ms / 86400000);
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────────────────────
+  loadSummary();
+  loadMonthlyChart();
+  loadByListing();
+  loadPayouts();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Status — StayMontenegro</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root { --primary: #F2B800; --dark: #222; --light: #f7f7f7; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #333; background: #f7f7f7; }
+    .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+    
+    header { background: linear-gradient(135deg, #F2B800 0%, #e31c63 100%); color: white; padding: 40px 20px; margin-bottom: 40px; text-align: center; }
+    header h1 { font-size: 28px; margin-bottom: 8px; }
+    
+    .search-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .search-section h3 { margin-bottom: 16px; }
+    .search-form { display: flex; gap: 10px; }
+    .search-form input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; }
+    .search-form button { padding: 12px 24px; background: #F2B800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    
+    .ticket-card { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    .ticket-header { border-bottom: 1px solid #eee; padding-bottom: 16px; margin-bottom: 16px; }
+    .ticket-id { font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+    .ticket-subject { font-size: 20px; font-weight: bold; margin: 8px 0; }
+    .ticket-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 14px; }
+    .status-badge { display: inline-block; padding: 6px 12px; border-radius: 12px; font-weight: bold; font-size: 12px; }
+    .status-open { background: #fff3cd; color: #856404; }
+    .status-in-progress { background: #cce5ff; color: #004085; }
+    .status-resolved { background: #d4edda; color: #155724; }
+    .status-closed { background: #e2e3e5; color: #383d41; }
+    
+    .ticket-info { background: #f7f7f7; padding: 16px; border-radius: 6px; margin-bottom: 16px; }
+    .info-row { display: flex; gap: 16px; margin-bottom: 12px; }
+    .info-label { font-weight: bold; min-width: 100px; }
+    .info-value { color: #666; }
+    
+    .messages-section { margin-top: 20px; }
+    .messages-section h3 { margin-bottom: 16px; }
+    .message { padding: 16px; background: #f7f7f7; border-radius: 6px; margin-bottom: 12px; }
+    .message.support-response { background: #e3f2fd; border-left: 4px solid #1976d2; }
+    .message-header { font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+    .message-body { line-height: 1.6; color: #555; }
+    .message-time { font-size: 12px; color: #999; margin-top: 8px; }
+    
+    .reply-section { margin-top: 20px; }
+    .reply-form textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; min-height: 100px; font-family: Arial; font-size: 14px; }
+    .reply-form button { margin-top: 12px; padding: 12px 24px; background: #F2B800; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    
+    .no-ticket { text-align: center; padding: 40px; color: #999; }
+    .loading { text-align: center; padding: 20px; }
+    
+    @media (max-width: 600px) {
+      .search-form { flex-direction: column; }
+      .ticket-meta { flex-direction: column; gap: 8px; }
+      .info-row { flex-direction: column; gap: 4px; }
+    }
+  </style>
+    <link rel="stylesheet" href="color-utilities.css">
+    </head>
+<body>
+  <header>
+    <h1>🎫 Track Your Support Ticket</h1>
+    <p>Enter your ticket ID or email to view status</p>
+  </header>
+
+  <div class="container">
+    <div class="search-section">
+      <h3>Find Your Ticket</h3>
+      <form class="search-form" onsubmit="searchTicket(event)">
+        <input type="text" id="searchInput" placeholder="Enter ticket ID (e.g., TICKET-001234) or email" value="">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <div id="loadingDiv" class="loading" style="display: none;">
+      <p>⏳ Loading ticket...</p>
+    </div>
+
+    <div id="noTicketDiv" class="no-ticket" style="display: none;">
+      <p>🔍 No ticket found. Please check your ticket ID or email and try again.</p>
+      <a href="contact-support.html" style="display: inline-block; margin-top: 16px; color: #F2B800; text-decoration: none; font-weight: bold;">Create a new ticket →</a>
+    </div>
+
+    <div id="ticketDiv" style="display: none;">
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <div class="ticket-id">Support Ticket</div>
+          <div class="ticket-subject" id="ticketSubject"></div>
+          <div class="ticket-meta">
+            <div><strong>Status:</strong> <span id="statusBadge" class="status-badge"></span></div>
+            <div><strong>Priority:</strong> <span id="priority"></span></div>
+            <div><strong>Created:</strong> <span id="createdDate"></span></div>
+          </div>
+        </div>
+
+        <div class="ticket-info">
+          <div class="info-row">
+            <div class="info-label">Ticket ID:</div>
+            <div class="info-value" id="ticketId"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Email:</div>
+            <div class="info-value" id="ticketEmail"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Category:</div>
+            <div class="info-value" id="ticketCategory"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Assigned To:</div>
+            <div class="info-value" id="assignedTo">Support Team</div>
+          </div>
+        </div>
+
+        <div class="messages-section">
+          <h3>📧 Ticket Thread</h3>
+          
+          <div class="message">
+            <div class="message-header">You</div>
+            <div class="message-body" id="originalMessage"></div>
+            <div class="message-time" id="originalTime"></div>
+          </div>
+
+          <div id="responsesContainer"></div>
+        </div>
+
+        <div class="reply-section" id="replySection">
+          <h3>Reply to This Ticket</h3>
+          <form class="reply-form" onsubmit="submitReply(event)">
+            <textarea id="replyMessage" placeholder="Your message..." required></textarea>
+            <button type="submit">Send Reply</button>
+          </form>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee;">
+          <button onclick="closeTicket()" style="padding: 10px 16px; background: #ccc; color: #333; border: none; border-radius: 4px; cursor: pointer;">Close This Ticket</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function searchTicket(event) {
+      if (event) event.preventDefault();
+
+      let searchValue = document.getElementById('searchInput').value.trim();
+      if (!searchValue) {
+        const params = new URLSearchParams(window.location.search);
+        searchValue = params.get('id');
+      }
+
+      if (!searchValue) {
+        document.getElementById('noTicketDiv').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('loadingDiv').style.display = 'block';
+      document.getElementById('ticketDiv').style.display = 'none';
+      document.getElementById('noTicketDiv').style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/support/tickets/${searchValue}`);
+        
+        if (!res.ok) {
+          throw new Error('Ticket not found');
+        }
+
+        const ticket = await res.json();
+        displayTicket(ticket);
+      } catch (error) {
+        console.error('Search failed:', error);
+        document.getElementById('loadingDiv').style.display = 'none';
+        document.getElementById('noTicketDiv').style.display = 'block';
+      }
+    }
+
+    function displayTicket(ticket) {
+      // Header info
+      document.getElementById('ticketId').textContent = ticket.ticketId;
+      document.getElementById('ticketSubject').textContent = ticket.subject;
+      document.getElementById('ticketEmail').textContent = ticket.email;
+      document.getElementById('ticketCategory').textContent = ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1);
+      document.getElementById('priority').textContent = '🟢 ' + ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1);
+
+      // Status badge
+      const statusBadge = document.getElementById('statusBadge');
+      const statusClass = `status-${ticket.status}`;
+      const statusEmoji = ticket.status === 'open' ? '🟡' : ticket.status === 'in-progress' ? '🔵' : ticket.status === 'resolved' ? '✅' : '🔒';
+      statusBadge.className = 'status-badge ' + statusClass;
+      statusBadge.textContent = `${statusEmoji} ${ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}`;
+
+      // Dates
+      document.getElementById('createdDate').textContent = new Date(ticket.createdAt).toLocaleDateString();
+      document.getElementById('originalMessage').textContent = ticket.message;
+      document.getElementById('originalTime').textContent = new Date(ticket.createdAt).toLocaleString();
+
+      // Responses
+      const responsesContainer = document.getElementById('responsesContainer');
+      responsesContainer.innerHTML = '';
+
+      if (ticket.responses && ticket.responses.length > 0) {
+        ticket.responses.forEach(response => {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = 'message support-response';
+          messageDiv.innerHTML = `
+            <div class="message-header">✉️ ${response.responder || 'Support Team'}</div>
+            <div class="message-body">${response.message}</div>
+            <div class="message-time">${new Date(response.timestamp).toLocaleString()}</div>
+          `;
+          responsesContainer.appendChild(messageDiv);
+        });
+      }
+
+      // Show/hide reply section based on status
+      const replySection = document.getElementById('replySection');
+      if (ticket.status === 'closed') {
+        replySection.style.display = 'none';
+      } else {
+        replySection.style.display = 'block';
+      }
+
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('ticketDiv').style.display = 'block';
+
+      // Store ticket ID for reply
+      window.currentTicketId = ticket._id;
+      window.currentTicketNumber = ticket.ticketId;
+    }
+
+    async function submitReply(event) {
+      event.preventDefault();
+
+      const message = document.getElementById('replyMessage').value.trim();
+      if (!message) return;
+
+      try {
+        const res = await fetch(`/api/support/tickets/${window.currentTicketId}/reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            ticketId: window.currentTicketNumber,
+          }),
+        });
+
+        if (res.ok) {
+          alert('✅ Reply sent! Our team will respond soon.');
+          document.getElementById('replyMessage').value = '';
+          // Reload ticket
+          searchTicket();
+        } else {
+          alert('❌ Failed to send reply');
+        }
+      } catch (error) {
+        console.error('Reply failed:', error);
+        alert('❌ An error occurred');
+      }
+    }
+
+    async function closeTicket() {
+      if (!confirm('Are you sure you want to close this ticket?')) return;
+
+      try {
+        const res = await fetch(`/api/support/tickets/${window.currentTicketId}/close`, {
+          method: 'POST',
+        });
+
+        if (res.ok) {
+          alert('✅ Ticket closed. Thank you for contacting us!');
+          setTimeout(() => {
+            searchTicket();
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('Close failed:', error);
+        alert('❌ Failed to close ticket');
+      }
+    }
+
+    // Auto-load ticket if ID in URL
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('id')) {
+        document.getElementById('searchInput').value = params.get('id');
+        searchTicket();
+      }
+    });
+
+    // Allow Enter to search
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchTicket();
+    });
+  </script>
+</body>
+</html>

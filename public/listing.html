@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listing — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    #map { height: 280px; border-radius: 12px; margin-top: 24px; z-index: 0; }
+    .amenity-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 20px; }
+    .amenity-tag  { background: #f5f5f5; color: #444; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+    .reviews-section { margin-top: 36px; }
+    .reviews-section h2 { font-size: 20px; font-weight: 800; margin-bottom: 16px; }
+    .review-card { background: #f9f9f9; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .review-card .reviewer { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .review-card .review-stars { color: #f5a623; margin-bottom: 6px; font-size: 15px; }
+    .review-card .review-text { color: #555; font-size: 14px; line-height: 1.6; }
+    .review-card .review-date { color: #bbb; font-size: 12px; margin-top: 6px; }
+    .write-review { background: white; border: 1.5px solid #e0e0e0; border-radius: 14px; padding: 22px; margin-top: 20px; }
+    .write-review h3 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+    .star-picker { display: flex; gap: 6px; margin-bottom: 14px; }
+    .star-picker span { font-size: 30px; cursor: pointer; color: #ddd; transition: color 0.1s; }
+    .star-picker span.active { color: #f5a623; }
+    .avg-rating-display { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .avg-stars { color: #f5a623; font-size: 20px; }
+    /* F7 gallery */
+    .gallery-main { position: relative; }
+    .gallery-thumbs { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .gallery-thumbs img { width:78px; height:58px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid transparent; }
+    .gallery-thumbs img.active { border-color:#ff385c; }
+    .gallery-nav { position:absolute; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.9); border:none; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+    .gallery-nav.prev { left:12px; } .gallery-nav.next { right:12px; }
+    .fav-detail { position:absolute; top:14px; right:14px; width:44px; height:44px; border-radius:50%; border:none; background:rgba(255,255,255,.92); font-size:22px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    /* F6 contact host */
+    .contact-host { margin-top:14px; }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:600; padding:20px; }
+    .modal-bg.show { display:flex; }
+    .modal { background:white; border-radius:16px; padding:26px; max-width:440px; width:100%; }
+    .modal h3 { margin-bottom:14px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="/">← All Listings</a>
+    <a href="/mybookings.html" id="myBookingsLink" style="display:none">My Bookings</a>
+    <a href="/auth.html" id="authLink">Login / Register</a>
+    <button id="logoutBtn" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div id="pageContent" style="display:none">
+  <div style="display:grid; grid-template-columns:1fr 360px; gap:40px;" class="listing-detail" id="detailGrid">
+
+    <!-- Left -->
+    <div>
+      <div class="gallery-main">
+        <button class="fav-detail" id="favBtn" style="display:none" onclick="toggleFav()">🤍</button>
+        <img id="listingImage" src="" alt="">
+        <button class="gallery-nav prev" id="galPrev" style="display:none" onclick="galStep(-1)">‹</button>
+        <button class="gallery-nav next" id="galNext" style="display:none" onclick="galStep(1)">›</button>
+      </div>
+      <div class="gallery-thumbs" id="galleryThumbs"></div>
+      <h1 id="listingTitle"></h1>
+      <p class="listing-meta" id="listingMeta"></p>
+      <div id="avgRatingDisplay"></div>
+      <div class="amenity-tags" id="amenityTags"></div>
+      <p class="listing-desc" id="listingDesc"></p>
+
+      <!-- Map -->
+      <div id="map"></div>
+
+      <!-- Reviews -->
+      <div class="reviews-section">
+        <h2 id="reviewsHeading">Reviews</h2>
+        <div id="reviewsList"></div>
+
+        <!-- Write a review (shown only if logged in) -->
+        <div class="write-review" id="writeReview" style="display:none">
+          <h3>Leave a review</h3>
+          <div class="star-picker" id="starPicker">
+            <span data-v="1" onclick="setRating(1)">★</span>
+            <span data-v="2" onclick="setRating(2)">★</span>
+            <span data-v="3" onclick="setRating(3)">★</span>
+            <span data-v="4" onclick="setRating(4)">★</span>
+            <span data-v="5" onclick="setRating(5)">★</span>
+          </div>
+          <div class="form-group">
+            <textarea id="reviewComment" placeholder="Share your experience…" rows="3"></textarea>
+          </div>
+          <button onclick="submitReview()">Submit Review</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: booking box -->
+    <div class="book-box">
+      <div class="price-display">€<span id="pricePerNight">0</span> <span>/ night</span></div>
+
+      <div id="availBanner" style="display:none; padding:10px 14px; border-radius:10px; font-size:13px; font-weight:600; margin-bottom:14px;"></div>
+
+      <div class="date-row">
+        <div class="form-group">
+          <label>Check-in</label>
+          <input type="date" id="checkIn" onchange="onDateChange()">
+        </div>
+        <div class="form-group">
+          <label>Check-out</label>
+          <input type="date" id="checkOut" onchange="onDateChange()">
+        </div>
+      </div>
+
+      <div id="priceBreakdown" style="display:none; font-size:13px; color:#555; border-top:1px solid #eee; padding-top:12px; margin-bottom:6px;"></div>
+
+      <div class="total-row" id="totalRow" style="display:none">
+        <span id="nightsLabel">0 nights</span>
+        <span>€<span id="totalPrice">0</span></span>
+      </div>
+
+      <div class="form-group" style="margin-top:6px">
+        <label>Guests</label>
+        <select id="guests"></select>
+      </div>
+
+      <button class="btn-block" id="bookBtn" onclick="book()">Reserve Now</button>
+      <p style="font-size:12px; color:#aaa; text-align:center; margin-top:10px;">You won't be charged yet</p>
+
+      <button class="btn-outline btn-block contact-host" id="contactHostBtn" style="display:none" onclick="openContact()">💬 Contact Host</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact host modal -->
+<div class="modal-bg" id="contactModal">
+  <div class="modal">
+    <h3>Message the host</h3>
+    <div class="form-group"><textarea id="contactBody" rows="4" placeholder="Hi! I'm interested in your place…"></textarea></div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-block" onclick="sendContact()">Send</button>
+      <button class="btn-secondary btn-block" onclick="closeContact()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="spinner" id="spinner"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const id    = new URLSearchParams(window.location.search).get('id');
+  let listing = null;
+  let selectedRating = 0;
+
+  // Auth UI
+  const token = localStorage.getItem('token');
+  if (token) {
+    document.getElementById('authLink').style.display       = 'none';
+    document.getElementById('logoutBtn').style.display      = 'inline-block';
+    document.getElementById('myBookingsLink').style.display = 'inline-block';
+    document.getElementById('writeReview').style.display    = '';
+  }
+
+  function logout() { localStorage.removeItem('token'); window.location.href = '/auth.html'; }
+
+  // ── F7 Gallery ───────────────────────────────────────────────────────────────
+  let gallery = [];
+  let galIdx = 0;
+  function setupGallery(images, fallback) {
+    gallery = (images && images.length) ? images : (fallback ? [fallback] : []);
+    galIdx = 0;
+    const thumbs = document.getElementById('galleryThumbs');
+    const hasMany = gallery.length > 1;
+    document.getElementById('galPrev').style.display = hasMany ? 'flex' : 'none';
+    document.getElementById('galNext').style.display = hasMany ? 'flex' : 'none';
+    if (hasMany) {
+      thumbs.innerHTML = gallery.map((src, i) =>
+        `<img src="${src}" class="${i===0?'active':''}" onclick="galShow(${i})" alt="photo ${i+1}">`).join('');
+    } else { thumbs.innerHTML = ''; }
+    galShow(0);
+  }
+  function galShow(i) {
+    if (!gallery.length) return;
+    galIdx = (i + gallery.length) % gallery.length;
+    document.getElementById('listingImage').src = gallery[galIdx];
+    document.querySelectorAll('#galleryThumbs img').forEach((el, idx) => el.classList.toggle('active', idx === galIdx));
+  }
+  function galStep(d) { galShow(galIdx + d); }
+
+  // ── F1 Favorite ──────────────────────────────────────────────────────────────
+  async function initFav() {
+    if (!token) return;
+    document.getElementById('favBtn').style.display = 'block';
+    await window.favHelper.loadIds();
+    document.getElementById('favBtn').textContent = window.favHelper.ids.has(String(id)) ? '❤️' : '🤍';
+  }
+  async function toggleFav() {
+    const nowFav = await window.favHelper.toggle(id);
+    if (nowFav === null) return;
+    document.getElementById('favBtn').textContent = nowFav ? '❤️' : '🤍';
+    toast(nowFav ? 'Saved to favorites' : 'Removed from saved', nowFav ? 'success' : 'info');
+  }
+
+  // ── F6 Contact host ──────────────────────────────────────────────────────────
+  function openContact() {
+    if (!token) { toast('Please login to message the host', 'warning'); setTimeout(() => location.href = '/auth.html', 900); return; }
+    document.getElementById('contactModal').classList.add('show');
+  }
+  function closeContact() { document.getElementById('contactModal').classList.remove('show'); }
+  async function sendContact() {
+    const body = document.getElementById('contactBody').value.trim();
+    if (!body) return toast('Write a message first', 'warning');
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token },
+        body: JSON.stringify({ listingId: id, body }),
+      });
+      const data = await res.json();
+      if (!res.ok) return toast(data.error || 'Failed to send', 'error');
+      toast('Message sent! ✅', 'success');
+      closeContact();
+      document.getElementById('contactBody').value = '';
+      setTimeout(() => location.href = `/messages.html?listing=${id}&with=${listing.ownerId}`, 1000);
+    } catch { toast('Network error', 'error'); }
+  }
+
+  // Populate guests dropdown based on maxGuests
+  function setupGuests(maxGuests) {
+    const sel = document.getElementById('guests');
+    const max = Math.max(1, maxGuests || 1);
+    sel.innerHTML = Array.from({ length: max }, (_, i) =>
+      `<option value="${i+1}">${i+1} guest${i ? 's' : ''}</option>`).join('');
+  }
+
+  // Date setup
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('checkIn').min  = today;
+  document.getElementById('checkOut').min = today;
+
+  async function updateTotal() {
+    const ci = document.getElementById('checkIn').value;
+    const co = document.getElementById('checkOut').value;
+    const bd = document.getElementById('priceBreakdown');
+    if (!ci || !co || new Date(co) <= new Date(ci)) {
+      document.getElementById('totalRow').style.display = 'none';
+      bd.style.display = 'none';
+      return;
+    }
+    // Seasonal-aware quote from the server (Feature #1)
+    try {
+      const res = await fetch(`/api/listings/${id}/quote?checkIn=${ci}&checkOut=${co}`);
+      const q = await res.json();
+      if (!res.ok) throw new Error();
+      document.getElementById('nightsLabel').textContent = `${q.nights} night${q.nights !== 1 ? 's' : ''}`;
+      document.getElementById('totalPrice').textContent  = q.total;
+      document.getElementById('totalRow').style.display  = 'flex';
+
+      // Show per-segment breakdown only when more than one rate applies
+      if (q.breakdown && q.breakdown.length > 1) {
+        bd.innerHTML = q.breakdown.map(s =>
+          `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+             <span>€${s.price} × ${s.nights} night${s.nights !== 1 ? 's' : ''}${s.label && s.label !== 'Base' ? ` <span style="color:#ff385c">(${s.label})</span>` : ''}</span>
+             <span>€${s.subtotal}</span>
+           </div>`).join('');
+        bd.style.display = 'block';
+      } else if (q.breakdown && q.breakdown.length === 1 && q.breakdown[0].label !== 'Base') {
+        bd.innerHTML = `<div style="color:#ff385c;font-weight:600">${q.breakdown[0].label} rate: €${q.breakdown[0].price}/night</div>`;
+        bd.style.display = 'block';
+      } else { bd.style.display = 'none'; }
+    } catch {
+      // Fallback to flat base price
+      const nights = Math.ceil((new Date(co) - new Date(ci)) / 864e5);
+      document.getElementById('nightsLabel').textContent = `${nights} night${nights !== 1 ? 's' : ''}`;
+      document.getElementById('totalPrice').textContent  = nights * listing.price;
+      document.getElementById('totalRow').style.display  = 'flex';
+      bd.style.display = 'none';
+    }
+  }
+
+  async function onDateChange() {
+    const ci = document.getElementById('checkIn').value;
+    const co = document.getElementById('checkOut').value;
+    if (ci) document.getElementById('checkOut').min = ci;
+    await updateTotal();
+    if (!ci || !co || new Date(co) <= new Date(ci)) return;
+
+    const banner = document.getElementById('availBanner');
+    const btn    = document.getElementById('bookBtn');
+    try {
+      const res  = await fetch(`/api/listings/${id}/availability?checkIn=${ci}&checkOut=${co}`);
+      const data = await res.json();
+      banner.style.display = 'block';
+      if (data.available) {
+        Object.assign(banner.style, { background:'#f0fff4', color:'#27ae60', border:'1px solid #c3e6cb' });
+        banner.textContent = '✅ These dates are available!';
+        btn.disabled = false;
+      } else {
+        Object.assign(banner.style, { background:'#fff0f3', color:'#c0392b', border:'1px solid #f5c6cb' });
+        banner.textContent = `❌ Already booked ${new Date(data.conflict.checkIn).toLocaleDateString()} – ${new Date(data.conflict.checkOut).toLocaleDateString()}`;
+        btn.disabled = true;
+      }
+    } catch { banner.style.display = 'none'; }
+  }
+
+  // ── Map ──────────────────────────────────────────────────────────────────────
+  async function initMap(city) {
+    try {
+      let lat = listing.lat, lon = listing.lng;
+      if (typeof lat !== 'number' || typeof lon !== 'number') {
+        const geo = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
+        const loc = await geo.json();
+        if (!loc.length) { document.getElementById('map').style.display = 'none'; return; }
+        lat = parseFloat(loc[0].lat); lon = parseFloat(loc[0].lon);
+      }
+
+      const map = L.map('map').setView([lat, lon], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+
+      const icon = L.divIcon({
+        html: `<div style="background:#ff385c;color:white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🏠</div>`,
+        iconSize: [36, 36], iconAnchor: [18, 18], className: '',
+      });
+      L.marker([lat, lon], { icon }).addTo(map).bindPopup(`<strong>${listing.title}</strong><br>${city}`).openPopup();
+    } catch { document.getElementById('map').style.display = 'none'; }
+  }
+
+  // ── Reviews ──────────────────────────────────────────────────────────────────
+  function setRating(n) {
+    selectedRating = n;
+    document.querySelectorAll('#starPicker span').forEach((s, i) => s.classList.toggle('active', i < n));
+  }
+
+  async function loadReviews() {
+    try {
+      const res     = await fetch(`/api/listings/${id}/reviews`);
+      const reviews = await res.json();
+      const list    = document.getElementById('reviewsList');
+      const heading = document.getElementById('reviewsHeading');
+
+      heading.textContent = reviews.length ? `Reviews (${reviews.length})` : 'Reviews';
+
+      if (!reviews.length) {
+        list.innerHTML = '<p style="color:#aaa;font-size:14px">No reviews yet. Be the first!</p>';
+        return;
+      }
+
+      list.innerHTML = reviews.map(r => `
+        <div class="review-card">
+          <div class="reviewer">${r.userId?.displayName || r.userId?.email?.split('@')[0] || 'Guest'}</div>
+          <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+          <div class="review-text">${r.comment || ''}</div>
+          <div class="review-date">${new Date(r.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
+        </div>`).join('');
+    } catch {}
+  }
+
+  async function submitReview() {
+    if (!selectedRating) return toast('Please select a star rating', 'warning');
+    const comment = document.getElementById('reviewComment').value.trim();
+    const btn = document.querySelector('#writeReview button');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    try {
+      const res  = await fetch(`/api/listings/${id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
+        body: JSON.stringify({ rating: selectedRating, comment })
+      });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error || 'Failed to submit review', 'error'); btn.disabled = false; btn.textContent = 'Submit Review'; return; }
+      toast('Review submitted!', 'success');
+      document.getElementById('writeReview').style.display = 'none';
+      loadReviews();
+    } catch { toast('Network error', 'error'); btn.disabled = false; btn.textContent = 'Submit Review'; }
+  }
+
+  // ── Load listing ─────────────────────────────────────────────────────────────
+  async function loadListing() {
+    if (!id) { document.getElementById('spinner').style.display = 'none'; return; }
+
+    const res  = await fetch(`/api/listings/${id}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      document.getElementById('spinner').style.display = 'none';
+      document.body.innerHTML += '<p style="text-align:center;padding:40px;color:#999">Listing not found.</p>';
+      return;
+    }
+
+    listing = data;
+    document.title = `${data.title} — StayMontenegro`;
+    setupGallery(data.images, data.image);
+    document.getElementById('listingImage').alt          = data.title;
+    document.getElementById('listingTitle').textContent  = data.title;
+    document.getElementById('listingMeta').textContent   = `📍 ${data.city} · 👥 up to ${data.maxGuests || 1} guests`;
+    document.getElementById('listingDesc').textContent   = data.description || '';
+    document.getElementById('pricePerNight').textContent = data.price;
+
+    setupGuests(data.maxGuests);
+    initFav();
+
+    // Show "Contact Host" if there's a host and it isn't me
+    if (data.ownerId) {
+      let myId = null;
+      if (token) { try { myId = JSON.parse(atob(token.split('.')[1])).id; } catch {} }
+      if (String(data.ownerId) !== String(myId)) {
+        document.getElementById('contactHostBtn').style.display = 'block';
+      }
+    }
+
+    // Avg rating
+    if (data.reviewCount) {
+      document.getElementById('avgRatingDisplay').innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="avg-stars">${'★'.repeat(Math.round(data.avgRating))}${'☆'.repeat(5 - Math.round(data.avgRating))}</span>
+          <span style="font-weight:700">${data.avgRating}</span>
+          <span style="color:#aaa;font-size:14px">(${data.reviewCount} review${data.reviewCount !== 1 ? 's' : ''})</span>
+        </div>`;
+    }
+
+    // Amenities
+    if (data.amenities?.length) {
+      document.getElementById('amenityTags').innerHTML = data.amenities.map(a => `<span class="amenity-tag">${a}</span>`).join('');
+    }
+
+    document.getElementById('spinner').style.display     = 'none';
+    document.getElementById('pageContent').style.display = '';
+
+    // Load map and reviews in parallel
+    initMap(data.city);
+    loadReviews();
+
+    // Pre-fill dates from URL (when arriving from a dated search) → show quote immediately
+    const params = new URLSearchParams(window.location.search);
+    const urlCi = params.get('checkIn'), urlCo = params.get('checkOut');
+    if (urlCi && urlCo) {
+      document.getElementById('checkIn').value  = urlCi;
+      document.getElementById('checkOut').value = urlCo;
+      onDateChange();
+    }
+  }
+
+  // ── Book ─────────────────────────────────────────────────────────────────────
+  async function book() {
+    if (!token) { toast('Please login to book', 'warning'); setTimeout(() => window.location.href = '/auth.html', 1000); return; }
+
+    const checkIn  = document.getElementById('checkIn').value;
+    const checkOut = document.getElementById('checkOut').value;
+    if (!checkIn || !checkOut) return toast('Please select check-in and check-out dates', 'error');
+    if (new Date(checkOut) <= new Date(checkIn)) return toast('Check-out must be after check-in', 'error');
+
+    const btn = document.getElementById('bookBtn');
+    btn.textContent = 'Checking…'; btn.disabled = true;
+    const guests = Number(document.getElementById('guests').value) || 1;
+
+    try {
+      const res  = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
+        body: JSON.stringify({ listingId: id, checkIn, checkOut, guests })
+      });
+      const data = await res.json();
+
+      if (res.status === 409 || res.status === 400) { toast(data.error, 'error'); btn.textContent = 'Reserve Now'; btn.disabled = false; return; }
+
+      if (res.status === 503) {
+        // No Stripe — direct booking
+        const bRes  = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': token },
+          body: JSON.stringify({ listingId: id, checkIn, checkOut, guests })
+        });
+        const bData = await bRes.json();
+        if (!bRes.ok) { toast(bData.error || 'Booking failed', 'error'); btn.textContent = 'Reserve Now'; btn.disabled = false; return; }
+        toast(`Booking confirmed! ${bData.nights} night(s) — €${bData.totalPrice}`, 'success');
+        btn.textContent = 'Booked ✅';
+        setTimeout(() => window.location.href = '/mybookings.html', 1500);
+        return;
+      }
+
+      if (!res.ok) throw new Error(data.error || 'Unknown error');
+      window.location.href = data.url;
+    } catch (err) {
+      toast(err.message || 'Something went wrong', 'error');
+      btn.textContent = 'Reserve Now'; btn.disabled = false;
+    }
+  }
+
+  loadListing();
+</script>
+
+</body>
+</html>

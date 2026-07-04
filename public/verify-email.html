@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+</header>
+
+<div class="center-page">
+  <div class="spinner" id="spinner"></div>
+  <p style="color:#999; margin-top:16px" id="statusText">Verifying your email…</p>
+  <a href="/" id="continueLink" class="btn" style="display:none; margin-top:16px;">Continue to StayMontenegro</a>
+</div>
+
+<script src="toast.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  const spinner  = document.getElementById('spinner');
+  const status   = document.getElementById('statusText');
+  const continueLink = document.getElementById('continueLink');
+
+  function done(message, isError) {
+    spinner.style.display = 'none';
+    status.textContent = message;
+    status.style.color = isError ? '#e11d48' : '#16a34a';
+    continueLink.style.display = 'inline-block';
+  }
+
+  if (!token) {
+    done('Missing verification token. Please use the link from your email.', true);
+  } else {
+    fetch('/api/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .then(async r => ({ ok: r.ok, data: await r.json() }))
+      .then(({ ok, data }) => {
+        if (ok) {
+          toast('Email verified!', 'success');
+          done('Your email has been verified. Welcome to StayMontenegro! 🎉', false);
+        } else {
+          done(data.error || 'Verification failed. The link may have expired.', true);
+        }
+      })
+      .catch(() => done('Something went wrong. Please try again later.', true));
+  }
+</script>
+
+</body>
+</html>

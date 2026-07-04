@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Dashboard — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .stat-row { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:28px; }
+    .stat { background:white; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,0.07); padding:18px 24px; flex:1; min-width:150px; }
+    .stat .num { font-size:28px; font-weight:800; color:#ff385c; }
+    .stat .lbl { font-size:13px; color:#777; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+    .host-listing { display:grid; grid-template-columns:90px 1fr auto; gap:16px; align-items:center; background:white; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,0.07); padding:14px; margin-bottom:12px; }
+    .host-listing img { width:90px; height:70px; object-fit:cover; border-radius:8px; }
+    .host-listing h4 { font-size:16px; margin-bottom:3px; }
+    .host-listing .sub { font-size:13px; color:#777; }
+    .pending-pill { background:#fff3cd; color:#856404; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:700; margin-left:6px; }
+    .actions { display:flex; gap:8px; }
+    .actions .btn-secondary, .actions button { padding:7px 13px; font-size:13px; }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:500; padding:20px; }
+    .modal-bg.show { display:flex; }
+    .modal { background:white; border-radius:16px; padding:28px; max-width:480px; width:100%; max-height:90vh; overflow:auto; }
+    .modal h3 { margin-bottom:18px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/">← Home</a>
+    <a href="/add.html">+ Add Listing</a>
+    <a href="/revenue.html">💰 Revenue</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2 class="section-title">🏠 Host Dashboard</h2>
+
+  <div class="stat-row" id="stats" style="display:none">
+    <div class="stat"><div class="num" id="statListings">0</div><div class="lbl">Listings</div></div>
+    <div class="stat"><div class="num" id="statBookings">0</div><div class="lbl">Bookings</div></div>
+    <div class="stat"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
+    <div class="stat"><div class="num" id="statRevenue">€0</div><div class="lbl">Confirmed Revenue</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabListings" onclick="switchTab('listings')">My Listings</div>
+    <div class="tab" id="tabBookings" onclick="switchTab('bookings')">Incoming Bookings</div>
+  </div>
+
+  <div id="paneListings">
+    <div id="listingsSpinner" class="spinner"></div>
+    <div id="listingsList"></div>
+  </div>
+
+  <div id="paneBookings" style="display:none">
+    <div id="bookingsSpinner" class="spinner"></div>
+    <div id="bookingsList"></div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3>Edit Listing</h3>
+    <input type="hidden" id="editId">
+    <div class="form-group"><label>Title</label><input id="editTitle"></div>
+    <div class="form-group"><label>City</label><input id="editCity"></div>
+    <div class="form-group"><label>Price / night (€)</label><input id="editPrice" type="number" min="1"></div>
+    <div class="form-group"><label>Max guests</label><input id="editGuests" type="number" min="1"></div>
+    <div class="form-group"><label>Description</label><textarea id="editDesc"></textarea></div>
+    <div class="form-group">
+      <label>Seasonal pricing</label>
+      <div id="editRulesList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+      <button type="button" class="btn-secondary" onclick="addEditRule()" style="padding:7px 13px;font-size:13px">+ Add seasonal rate</button>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button class="btn-block" onclick="saveEdit()">Save</button>
+      <button class="btn-secondary btn-block" onclick="closeEdit()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+  function logout() { localStorage.removeItem('token'); window.location.href = '/'; }
+
+  function fmtDate(d) { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); }
+
+  function switchTab(name) {
+    document.getElementById('tabListings').classList.toggle('active', name === 'listings');
+    document.getElementById('tabBookings').classList.toggle('active', name === 'bookings');
+    document.getElementById('paneListings').style.display = name === 'listings' ? '' : 'none';
+    document.getElementById('paneBookings').style.display = name === 'bookings' ? '' : 'none';
+  }
+
+  let myListings = [];
+
+  async function loadListings() {
+    try {
+      const res  = await fetch('/api/host/listings', { headers: { Authorization: token } });
+      const data = await res.json();
+      myListings = data;
+      document.getElementById('listingsSpinner').style.display = 'none';
+      const list = document.getElementById('listingsList');
+
+      if (!data.length) {
+        list.innerHTML = `<div class="empty-state"><div class="emoji">🏠</div><p>You have no listings yet.</p><a href="/add.html" class="btn" style="margin-top:16px">Add Your First Listing</a></div>`;
+      } else {
+        list.innerHTML = data.map(l => `
+          <div class="host-listing">
+            <img src="${l.image || 'https://placehold.co/180x140?text=No+Image'}" alt="${l.title}">
+            <div>
+              <h4>${l.title}</h4>
+              <p class="sub">📍 ${l.city} · €${l.price}/night · 👥 ${l.maxGuests}</p>
+              <p class="sub">${l.bookingCount} booking${l.bookingCount!==1?'s':''}${l.pendingCount ? `<span class="pending-pill">${l.pendingCount} pending</span>` : ''}</p>
+            </div>
+            <div class="actions">
+              <a class="btn-secondary" href="/listing.html?id=${l._id}">View</a>
+              <button onclick='openEdit(${JSON.stringify(JSON.stringify(l))})'>Edit</button>
+              <button class="btn-danger" onclick="delListing('${l._id}', this)">Delete</button>
+            </div>
+          </div>`).join('');
+      }
+
+      // stats
+      document.getElementById('stats').style.display = '';
+      document.getElementById('statListings').textContent = data.length;
+      document.getElementById('statBookings').textContent = data.reduce((s, l) => s + (l.bookingCount||0), 0);
+      document.getElementById('statPending').textContent  = data.reduce((s, l) => s + (l.pendingCount||0), 0);
+    } catch {
+      document.getElementById('listingsSpinner').style.display = 'none';
+      document.getElementById('listingsList').innerHTML = '<p style="color:#999;text-align:center;padding:40px">Failed to load.</p>';
+    }
+  }
+
+  async function loadBookings() {
+    try {
+      const res  = await fetch('/api/host/bookings', { headers: { Authorization: token } });
+      const data = await res.json();
+      document.getElementById('bookingsSpinner').style.display = 'none';
+      const list = document.getElementById('bookingsList');
+
+      let revenue = 0;
+      data.forEach(b => { if (b.status === 'confirmed') revenue += (b.totalPrice || 0); });
+      document.getElementById('statRevenue').textContent = '€' + revenue;
+
+      if (!data.length) { list.innerHTML = `<div class="empty-state"><div class="emoji">📅</div><p>No bookings yet.</p></div>`; return; }
+
+      list.innerHTML = data.map(b => `
+        <div class="host-listing">
+          <img src="${b.listingId?.image || 'https://placehold.co/180x140?text=No+Image'}" alt="">
+          <div>
+            <h4>${b.listingId?.title || 'Listing removed'}</h4>
+            <p class="sub">👤 ${b.userId?.displayName || b.userId?.email || 'Guest'} · 👥 ${b.guests || 1} guest(s)</p>
+            <p class="sub">📅 ${fmtDate(b.checkIn)} → ${fmtDate(b.checkOut)} · €${b.totalPrice||0} <span class="badge badge-${b.status}">${b.status}</span></p>
+          </div>
+          <div class="actions">
+            ${b.status === 'pending' ? `
+              <button onclick="confirmBooking('${b._id}', this)">Approve</button>
+              <button class="btn-danger" onclick="rejectBooking('${b._id}', this)">Reject</button>` : ''}
+            ${b.status === 'confirmed' && new Date(b.checkOut) < new Date() && !b.hostReviewedGuest ? `
+              <a href="/guest-review.html?bookingId=${b._id}" class="btn-secondary" style="padding:7px 13px;font-size:13px;text-decoration:none;border-radius:8px;border:1.5px solid #ddd;color:#444;">⭐ Review Guest</a>` : ''}
+          </div>
+        </div>`).join('');
+    } catch {
+      document.getElementById('bookingsSpinner').style.display = 'none';
+      document.getElementById('bookingsList').innerHTML = '<p style="color:#999;text-align:center;padding:40px">Failed to load.</p>';
+    }
+  }
+
+  async function confirmBooking(id, btn) {
+    btn.disabled = true; btn.textContent = '…';
+    const res = await fetch(`/api/host/bookings/${id}/confirm`, { method: 'PATCH', headers: { Authorization: token } });
+    if (res.ok) { toast('Booking approved ✅', 'success'); loadBookings(); loadListings(); }
+    else { toast('Failed', 'error'); btn.disabled = false; btn.textContent = 'Approve'; }
+  }
+  async function rejectBooking(id, btn) {
+    if (!confirm('Reject this booking?')) return;
+    btn.disabled = true; btn.textContent = '…';
+    const res = await fetch(`/api/host/bookings/${id}/reject`, { method: 'PATCH', headers: { Authorization: token } });
+    if (res.ok) { toast('Booking rejected', 'info'); loadBookings(); loadListings(); }
+    else { toast('Failed', 'error'); btn.disabled = false; btn.textContent = 'Reject'; }
+  }
+
+  async function delListing(id, btn) {
+    if (!confirm('Delete this listing? This also removes its bookings.')) return;
+    btn.disabled = true;
+    const res = await fetch(`/api/listings/${id}`, { method: 'DELETE', headers: { Authorization: token } });
+    if (res.ok) { toast('Listing deleted', 'info'); loadListings(); }
+    else { toast('Delete failed', 'error'); btn.disabled = false; }
+  }
+
+  // ── Edit modal ──
+  function openEdit(json) {
+    const l = JSON.parse(json);
+    document.getElementById('editId').value     = l._id;
+    document.getElementById('editTitle').value  = l.title;
+    document.getElementById('editCity').value   = l.city;
+    document.getElementById('editPrice').value  = l.price;
+    document.getElementById('editGuests').value = l.maxGuests;
+    document.getElementById('editDesc').value   = l.description || '';
+    // populate seasonal rules
+    const list = document.getElementById('editRulesList');
+    list.innerHTML = '';
+    (l.pricingRules || []).forEach(r => addEditRule({
+      label: r.label || '',
+      start: r.start ? String(r.start).slice(0, 10) : '',
+      end:   r.end   ? String(r.end).slice(0, 10)   : '',
+      price: r.price,
+    }));
+    document.getElementById('editModal').classList.add('show');
+  }
+  function closeEdit() { document.getElementById('editModal').classList.remove('show'); }
+
+  function addEditRule(rule = {}) {
+    const row = document.createElement('div');
+    row.className = 'edit-rule-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center';
+    row.innerHTML = `
+      <input class="er-label" placeholder="Label" value="${rule.label || ''}" style="font-size:13px;padding:8px">
+      <input class="er-start" type="date" value="${rule.start || ''}" style="font-size:13px;padding:8px">
+      <input class="er-end" type="date" value="${rule.end || ''}" style="font-size:13px;padding:8px">
+      <input class="er-price" type="number" min="0" placeholder="€" value="${rule.price || ''}" style="font-size:13px;padding:8px;width:80px">
+      <button type="button" onclick="this.closest('.edit-rule-row').remove()" class="btn-danger" style="padding:6px 10px;font-size:13px">×</button>`;
+    document.getElementById('editRulesList').appendChild(row);
+  }
+  function collectEditRules() {
+    return [...document.querySelectorAll('.edit-rule-row')].map(r => ({
+      label: r.querySelector('.er-label').value.trim(),
+      start: r.querySelector('.er-start').value,
+      end:   r.querySelector('.er-end').value,
+      price: Number(r.querySelector('.er-price').value),
+    })).filter(r => r.start && r.end && r.price > 0);
+  }
+
+  async function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const body = {
+      title:     document.getElementById('editTitle').value.trim(),
+      city:      document.getElementById('editCity').value.trim(),
+      price:     Number(document.getElementById('editPrice').value),
+      maxGuests: Number(document.getElementById('editGuests').value),
+      description: document.getElementById('editDesc').value.trim(),
+      pricingRules: collectEditRules(),
+    };
+    const res = await fetch(`/api/listings/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify(body),
+    });
+    if (res.ok) { toast('Listing updated ✅', 'success'); closeEdit(); loadListings(); }
+    else { const d = await res.json(); toast(d.error || 'Update failed', 'error'); }
+  }
+
+  loadListings();
+  loadBookings();
+</script>
+
+</body>
+</html>

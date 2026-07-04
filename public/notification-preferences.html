@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Preferences • StayMontenegro</title>
+  <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="color-utilities.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-logo">🏠 StayMontenegro</a>
+      <div class="navbar-right">
+        <a href="/help" class="nav-link">Help</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/" id="logout-btn" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="preferences-main">
+    <div class="preferences-header">
+      <h1>Notification Preferences</h1>
+      <p class="subtitle">Control how and when you receive notifications</p>
+    </div>
+
+    <div class="preferences-container">
+      <form id="preferences-form">
+        <!-- Notification Channels -->
+        <section class="preference-section">
+          <h2>📢 Notification Channels</h2>
+          <p class="section-description">Choose which channels you'd like to receive notifications on</p>
+
+          <div class="preference-item">
+            <div class="preference-content">
+              <h3>In-App Notifications</h3>
+              <p>See notifications in your StayMontenegro account</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="channels-inApp" id="channels-inApp" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-content">
+              <h3>Email Notifications</h3>
+              <p>Receive updates via email</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="channels-email" id="channels-email" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-content">
+              <h3>SMS Notifications</h3>
+              <p>Critical alerts via text message</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="channels-sms" id="channels-sms">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-content">
+              <h3>Push Notifications</h3>
+              <p>Browser push notifications (if enabled)</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="channels-push" id="channels-push">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Email Digest Preferences -->
+        <section class="preference-section">
+          <h2>📧 Email Digest</h2>
+          <p class="section-description">Combine multiple notifications into a single digest email</p>
+
+          <div class="preference-item">
+            <div class="preference-content">
+              <h3>Email Frequency</h3>
+              <p>How often would you like to receive digest emails?</p>
+            </div>
+            <select id="emailDigest" class="form-control" style="width: 200px;">
+              <option value="immediate">Immediate</option>
+              <option value="daily" selected>Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="never">Never</option>
+            </select>
+          </div>
+
+          <div class="preference-item">
+            <div class="preference-content">
+              <h3>Unsubscribe from Marketing</h3>
+              <p>Don't send promotional emails and special offers</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="unsubscribeAllMarketing" id="unsubscribeAllMarketing">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Quiet Hours -->
+        <section class="preference-section">
+          <h2>🌙 Quiet Hours</h2>
+          <p class="section-description">Don't send notifications during these hours</p>
+
+          <div class="quiet-hours-inputs">
+            <div class="preference-item">
+              <label for="quietHours-start">Start Time</label>
+              <input type="time" id="quietHours-start" class="form-control" value="22:00">
+            </div>
+            <div class="preference-item">
+              <label for="quietHours-end">End Time</label>
+              <input type="time" id="quietHours-end" class="form-control" value="08:00">
+            </div>
+          </div>
+
+          <div class="preference-item">
+            <label for="timezone">Timezone</label>
+            <select id="timezone" class="form-control">
+              <option value="UTC" selected>UTC</option>
+              <option value="Europe/Belgrade">Europe/Belgrade (CET)</option>
+              <option value="Europe/London">Europe/London (GMT)</option>
+              <option value="Europe/Paris">Europe/Paris (CET)</option>
+              <option value="America/New_York">America/New_York (EST)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Notification Type Preferences -->
+        <section class="preference-section">
+          <h2>🎯 Notification Types</h2>
+          <p class="section-description">Manage individual notification types</p>
+
+          <!-- Booking Notifications -->
+          <div class="notification-type-group">
+            <h3>📅 Booking & Reservations</h3>
+            <div class="type-toggles">
+              <div class="type-toggle-item">
+                <label>New Booking Requests</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-booking_request" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Booking Confirmed</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-booking_confirmed" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Check-in Reminders (24h before)</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-checkin_reminder" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Booking Cancelled</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-booking_cancelled" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Booking Modified</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-booking_modified" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Messaging Notifications -->
+          <div class="notification-type-group">
+            <h3>💬 Messages</h3>
+            <div class="type-toggles">
+              <div class="type-toggle-item">
+                <label>New Message</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-new_message" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Message Reply</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-message_reply" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Daily Message Digest</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-message_digest" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Notifications -->
+          <div class="notification-type-group">
+            <h3>💳 Payments</h3>
+            <div class="type-toggles">
+              <div class="type-toggle-item">
+                <label>Payment Received</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-payment_received" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Payment Failed</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-payment_failed" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Payout Processed</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-payout_processed" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Invoice Ready</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-invoice_ready" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Review Notifications -->
+          <div class="notification-type-group">
+            <h3>⭐ Reviews</h3>
+            <div class="type-toggles">
+              <div class="type-toggle-item">
+                <label>New Review</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-review_left" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Host Reply to Review</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-host_reply_review" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account Notifications -->
+          <div class="notification-type-group">
+            <h3>👤 Account</h3>
+            <div class="type-toggles">
+              <div class="type-toggle-item">
+                <label>Account Verified</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-account_verified" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Superhost Status</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-superhost_achieved" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="type-toggle-item">
+                <label>Security Alerts</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-security_alert" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Support Notifications -->
+          <div class="notification-type-group">
+            <h3>🆘 Support</h3>
+            <div class="type-toggles">
+              <div class="type-toggle-item">
+                <label>Support Ticket Responses</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" name="type-support_response" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Form Actions -->
+        <div class="preference-actions">
+          <button type="submit" class="btn btn-primary btn-lg">Save Preferences</button>
+          <button type="reset" id="reset-btn" class="btn btn-secondary btn-lg">Reset to Defaults</button>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="alert alert-success" style="display: none;">
+          ✅ Your notification preferences have been saved!
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="alert alert-danger" style="display: none;">
+          ❌ Failed to save preferences. Please try again.
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="/app.js"></script>
+  <script src="/notification-preferences.js"></script>
+</body>
+</html>

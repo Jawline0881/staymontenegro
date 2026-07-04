@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="color-utilities.css">
+  <style>
+    :root {
+      --primary: #667eea;
+      --danger: #F2B800;
+      --light: #f8f8f8;
+      --border: #e0e0e0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light); }
+
+    .admin-layout { display: flex; min-height: 100vh; }
+    .admin-sidebar { width: 250px; background: white; border-right: 1px solid var(--border); padding: 20px; position: fixed; height: 100vh; overflow-y: auto; }
+    .admin-sidebar h2 { color: var(--danger); font-size: 18px; margin-bottom: 30px; }
+    .admin-nav { list-style: none; }
+    .admin-nav a { display: block; padding: 12px 16px; color: #666; text-decoration: none; border-radius: 8px; transition: all 0.3s; }
+    .admin-nav a:hover, .admin-nav a.active { background: var(--primary); color: white; }
+
+    .admin-main { margin-left: 250px; flex: 1; display: flex; flex-direction: column; }
+    .admin-header { background: white; border-bottom: 1px solid var(--border); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+    .admin-content { flex: 1; padding: 30px; overflow-y: auto; }
+
+    .content-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+    .content-header h1 { font-size: 24px; }
+
+    .search-bar { display: flex; gap: 10px; }
+    .search-bar input { padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; width: 250px; }
+    .search-bar button { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; }
+
+    .filter-section { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-section select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+
+    .users-table { width: 100%; border-collapse: collapse; }
+    .users-table th {
+      background: var(--light);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #666;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .users-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .users-table tr:hover { background: #fafafa; }
+
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge.active { background: #efe; color: #3a3; }
+    .badge.banned { background: #fee; color: #c33; }
+    .badge.suspended { background: #fef4e6; color: #f59e0b; }
+
+    .action-buttons { display: flex; gap: 6px; }
+    .btn-small { padding: 6px 12px; background: var(--light); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .btn-small:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn-small.danger { background: #fee; color: var(--danger); }
+    .btn-small.danger:hover { background: var(--danger); color: white; }
+
+    .pagination { display: flex; gap: 5px; justify-content: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .pagination button { padding: 8px 12px; border: 1px solid var(--border); background: white; border-radius: 4px; cursor: pointer; }
+    .pagination button.active { background: var(--primary); color: white; }
+
+    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .modal-header { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+    .modal-body { margin-bottom: 20px; color: #666; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
+
+    .loading { text-align: center; padding: 40px; color: #999; }
+    .spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: var(--primary); animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .admin-sidebar { position: relative; width: 100%; height: auto; margin-bottom: 20px; }
+      .admin-main { margin-left: 0; }
+      .search-bar input { width: 100%; }
+      .users-table { font-size: 12px; }
+      .users-table th, .users-table td { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>🛡️ Admin</h2>
+      <ul class="admin-nav">
+        <li><a href="/admin-dashboard.html">📊 Dashboard</a></li>
+        <li><a href="/admin-users.html" class="active">👥 Users</a></li>
+        <li><a href="/admin-properties.html">🏠 Properties</a></li>
+        <li><a href="/admin-bookings.html">📅 Bookings</a></li>
+        <li><a href="/admin-disputes.html">⚖️ Disputes</a></li>
+        <li><a href="/admin-financials.html">💰 Revenue</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-header">
+        <h1>Users Management</h1>
+        <button class="btn-small" onclick="logout()">Logout</button>
+      </header>
+
+      <div class="admin-content">
+        <div class="content-card">
+          <div class="content-header">
+            <h2>All Users</h2>
+            <div class="search-bar">
+              <input type="text" id="searchInput" placeholder="Search by name or email...">
+              <button onclick="searchUsers()">Search</button>
+            </div>
+          </div>
+
+          <div class="filter-section">
+            <select id="roleFilter" onchange="applyFilters()">
+              <option value="">All Roles</option>
+              <option value="guest">Guest</option>
+              <option value="host">Host</option>
+            </select>
+            <select id="statusFilter" onchange="applyFilters()">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="banned">Banned</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+
+          <div id="tableContainer" class="loading">
+            <div class="spinner"></div>
+            <p>Loading users...</p>
+          </div>
+
+          <div id="paginationContainer"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin-manager.js"></script>
+  <script>
+    let currentPage = 1;
+    const pageSize = 50;
+
+    async function loadUsers() {
+      adminManager.ensureLoggedIn();
+
+      try {
+        const search = document.getElementById('searchInput').value;
+        const role = document.getElementById('roleFilter').value;
+        const status = document.getElementById('statusFilter').value;
+
+        const data = await adminManager.getUsers(currentPage, pageSize, search, { role, status });
+
+        renderTable(data.users);
+        renderPagination(data.pagination);
+      } catch (err) {
+        document.getElementById('tableContainer').innerHTML = '<p style="color: #c33;">Error loading users</p>';
+      }
+    }
+
+    function renderTable(users) {
+      if (!users || users.length === 0) {
+        document.getElementById('tableContainer').innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No users found</p>';
+        return;
+      }
+
+      let html = '<table class="users-table"><thead><tr>';
+      html += '<th>User</th><th>Email</th><th>Status</th><th>Verified</th><th>Joined</th><th>Actions</th></tr></thead><tbody>';
+
+      users.forEach(user => {
+        const status = user.isBanned ? 'banned' : (user.status || 'active');
+        const statusBadge = status === 'banned' ? 'banned' : (status === 'suspended' ? 'suspended' : 'active');
+        
+        html += `<tr>
+          <td><div class="user-info">
+            <div class="user-avatar">${(user.displayName || user.email).charAt(0).toUpperCase()}</div>
+            <span>${user.displayName || 'Unknown'}</span>
+          </div></td>
+          <td>${user.email}</td>
+          <td><span class="badge ${statusBadge}">${statusBadge}</span></td>
+          <td>${user.isEmailVerified ? '✅' : '❌'}</td>
+          <td>${adminManager.formatDate(user.createdAt)}</td>
+          <td><div class="action-buttons">
+            <button class="btn-small" onclick="viewUser('${user._id}')">View</button>
+            ${status === 'active' ? `<button class="btn-small danger" onclick="banUser('${user._id}')">Ban</button>` : ''}
+            ${!user.isEmailVerified ? `<button class="btn-small" onclick="verifyUser('${user._id}')">Verify</button>` : ''}
+          </div></td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('tableContainer').innerHTML = html;
+    }
+
+    function renderPagination(pagination) {
+      const { page, pages } = pagination;
+      let html = '<div class="pagination">';
+
+      if (page > 1) html += `<button onclick="goPage(${page - 1})">← Previous</button>`;
+
+      for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) {
+        html += `<button onclick="goPage(${i})" class="${i === page ? 'active' : ''}">${i}</button>`;
+      }
+
+      if (page < pages) html += `<button onclick="goPage(${page + 1})">Next →</button>`;
+
+      html += '</div>';
+      document.getElementById('paginationContainer').innerHTML = html;
+    }
+
+    function goPage(page) {
+      currentPage = page;
+      loadUsers();
+    }
+
+    function searchUsers() {
+      currentPage = 1;
+      loadUsers();
+    }
+
+    function applyFilters() {
+      currentPage = 1;
+      loadUsers();
+    }
+
+    async function viewUser(userId) {
+      try {
+        const data = await adminManager.getUserDetails(userId);
+        const user = data.user;
+
+        let html = `
+          <h3>${user.displayName || user.email}</h3>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Status:</strong> ${user.isBanned ? 'Banned' : (user.status || 'Active')}</p>
+          <p><strong>Email Verified:</strong> ${user.isEmailVerified ? 'Yes' : 'No'}</p>
+          <p><strong>Joined:</strong> ${adminManager.formatDate(user.createdAt)}</p>
+          <p><strong>Last Login:</strong> ${adminManager.formatDate(user.lastLogin) || 'Never'}</p>
+          <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
+          <p><strong>Properties:</strong> ${data.stats.properties}</p>
+          <p><strong>Bookings:</strong> ${data.stats.bookings}</p>
+          <p><strong>Reviews:</strong> ${data.stats.reviews}</p>
+        `;
+
+        adminManager.createModal(`User Details`, html, [
+          { id: 'close', label: 'Close' }
+        ]);
+      } catch (err) {
+        adminManager.showError('Failed to load user details');
+      }
+    }
+
+    async function banUser(userId) {
+      const reason = prompt('Enter reason for banning:');
+      if (!reason) return;
+
+      try {
+        await adminManager.banUser(userId, reason);
+        adminManager.showSuccess('User banned successfully');
+        loadUsers();
+      } catch (err) {
+        adminManager.showError(err.message);
+      }
+    }
+
+    async function verifyUser(userId) {
+      try {
+        await adminManager.verifyUser(userId);
+        adminManager.showSuccess('User verified successfully');
+        loadUsers();
+      } catch (err) {
+        adminManager.showError(err.message);
+      }
+    }
+
+    function logout() {
+      if (confirm('Logout from admin panel?')) {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin-login.html';
+      }
+    }
+
+    // Initialize on page load
+    loadUsers();
+  </script>
+</body>
+</html>

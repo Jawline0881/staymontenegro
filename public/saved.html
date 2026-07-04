@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saved — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .card { position: relative; }
+    .fav-btn {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.9); cursor: pointer; font-size: 19px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18); transition: transform 0.12s, background 0.15s;
+      padding: 0;
+    }
+    .fav-btn:hover { transform: scale(1.12); background: #fff; }
+    .star { color: #f5a623; font-size: 13px; }
+    .card-rating { font-size: 13px; color: #555; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="/">← All Listings</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <a href="/mybookings.html">My Bookings</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2 class="section-title">❤️ Saved Listings</h2>
+  <div id="spinner" class="spinner"></div>
+  <div class="grid" id="listings"></div>
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+
+  function logout() { localStorage.removeItem('token'); window.location.href = '/'; }
+
+  function stars(avg, count) {
+    if (!count) return '';
+    const full = Math.round(avg);
+    return `<p class="card-rating"><span class="star">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> ${avg} <span style="color:#aaa">(${count})</span></p>`;
+  }
+
+  async function removeFav(listingId, ev) {
+    ev.preventDefault(); ev.stopPropagation();
+    try {
+      await fetch(`/api/favorites/${listingId}`, { method: 'DELETE', headers: { Authorization: token } });
+      toast('Removed from saved', 'info');
+      load();
+    } catch { toast('Failed', 'error'); }
+  }
+
+  async function load() {
+    const container = document.getElementById('listings');
+    try {
+      const res  = await fetch('/api/favorites', { headers: { Authorization: token } });
+      const data = await res.json();
+      document.getElementById('spinner').style.display = 'none';
+
+      if (!res.ok) { container.innerHTML = `<div class="empty-state"><p>Failed to load saved listings.</p></div>`; return; }
+      if (!data.length) {
+        container.innerHTML = `<div class="empty-state"><div class="emoji">🤍</div><p>No saved listings yet.</p><a href="/" class="btn" style="margin-top:16px">Browse Listings</a></div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      data.forEach(item => {
+        const a = document.createElement('a');
+        a.className = 'card';
+        a.href = `/listing.html?id=${item._id}`;
+        a.innerHTML = `
+          <button class="fav-btn" title="Remove from saved" onclick="removeFav('${item._id}', event)">❤️</button>
+          <img src="${item.image || 'https://placehold.co/400x250?text=No+Image'}" alt="${item.title}" loading="lazy">
+          <div class="card-content">
+            <h3>${item.title}</h3>
+            <p class="card-city">📍 ${item.city}</p>
+            ${stars(item.avgRating, item.reviewCount)}
+            <p class="card-desc">${item.description || ''}</p>
+            <p class="card-price">€${item.price} <span>/ night</span></p>
+          </div>`;
+        container.appendChild(a);
+      });
+    } catch {
+      document.getElementById('spinner').style.display = 'none';
+      container.innerHTML = `<div class="empty-state"><p>Network error.</p></div>`;
+    }
+  }
+
+  load();
+</script>
+
+</body>
+</html>

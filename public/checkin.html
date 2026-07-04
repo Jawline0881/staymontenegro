@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in Instructions — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .page-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #ff385c;
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+    .page-back:hover { text-decoration: underline; }
+
+    .checkin-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 28px 24px;
+      margin-bottom: 16px;
+    }
+
+    .checkin-card h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #222;
+    }
+
+    .section-block {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 20px 24px;
+      margin-bottom: 14px;
+    }
+
+    .section-block .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .section-block .section-value {
+      font-size: 17px;
+      color: #222;
+      line-height: 1.5;
+    }
+
+    /* Access code — big highlight box */
+    .access-code-box {
+      background: #fff4f6;
+      border: 2px solid #ff385c;
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      color: #ff385c;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* WiFi row */
+    .wifi-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .wifi-row:last-child { border-bottom: none; }
+    .wifi-row .wifi-label {
+      font-size: 13px;
+      color: #888;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      width: 80px;
+      flex-shrink: 0;
+    }
+    .wifi-row .wifi-value {
+      font-size: 17px;
+      font-weight: 600;
+      color: #222;
+      flex: 1;
+      word-break: break-all;
+    }
+    .copy-btn {
+      background: #f0f0f0;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      cursor: pointer;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { background: #e0e0e0; }
+    .copy-btn:active { background: #d0ffd8; color: #1a7a30; }
+
+    /* times row */
+    .times-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .time-item {
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .time-item .t-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+    .time-item .t-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: #222;
+    }
+
+    /* Lock screen */
+    .lock-screen {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .lock-screen .lock-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+    .lock-screen h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: #222;
+    }
+    .lock-screen .unlock-time {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 24px;
+    }
+    .countdown-display {
+      display: inline-block;
+      background: #fff4f6;
+      border: 2px solid #ff385c;
+      border-radius: 12px;
+      padding: 16px 28px;
+      font-size: 28px;
+      font-weight: 800;
+      color: #ff385c;
+      letter-spacing: 2px;
+      font-family: 'Courier New', Courier, monospace;
+      margin-bottom: 12px;
+    }
+    .lock-screen .hint-text {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 17px; line-height: 1.6; }
+    .empty-state a { color: #ff385c; font-weight: 600; }
+
+    @media (max-width: 600px) {
+      .container { padding: 16px; }
+      .access-code-box { font-size: 26px; letter-spacing: 3px; }
+      .times-grid { grid-template-columns: 1fr 1fr; }
+      .wifi-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/mybookings.html">My Bookings</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container" style="max-width:680px; padding-top:28px;">
+  <a href="/mybookings.html" class="page-back">← Back to My Bookings</a>
+
+  <div id="spinner" class="spinner"></div>
+  <div id="content"></div>
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+
+  const params    = new URLSearchParams(location.search);
+  const bookingId = params.get('bookingId');
+
+  if (!bookingId) {
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🤔</div>
+        <p>No booking specified.</p>
+        <p><a href="/mybookings.html">← Back to My Bookings</a></p>
+      </div>`;
+  } else {
+    loadCheckinInstructions();
+  }
+
+  /* ── countdown helpers ─────────────────────────────────────────── */
+  function msToHms(ms) {
+    if (ms <= 0) return '0h 0m';
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const hStr = h > 0 ? `${h}h ` : '';
+    return `${hStr}${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  }
+
+  function fmtDateTime(iso) {
+    return new Date(iso).toLocaleString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  /* ── copy helper ───────────────────────────────────────────────── */
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied';
+      btn.style.background = '#d0ffd8';
+      btn.style.color = '#1a7a30';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2000);
+    }).catch(() => toast('Copy failed', 'error'));
+  }
+
+  /* ── render helpers ────────────────────────────────────────────── */
+  function section(icon, label, valueHtml) {
+    return `
+      <div class="section-block">
+        <div class="section-label">${icon} ${label}</div>
+        <div class="section-value">${valueHtml}</div>
+      </div>`;
+  }
+
+  function renderAvailable(data) {
+    const el = document.getElementById('content');
+    let html = `
+      <div class="checkin-card">
+        <h2>🏠 Check-in Instructions</h2>
+        <p style="color:#777;font-size:14px;margin-top:4px">Everything you need for a smooth arrival.</p>
+      </div>`;
+
+    /* Access Code */
+    if (data.accessCode) {
+      html += `
+        <div class="section-block">
+          <div class="section-label">🗝️ Access Code</div>
+          <div class="access-code-box">${escHtml(data.accessCode)}</div>
+        </div>`;
+    }
+
+    /* WiFi */
+    if (data.wifiName || data.wifiPassword) {
+      html += `<div class="section-block">
+        <div class="section-label">📶 WiFi</div>`;
+      if (data.wifiName) {
+        html += `<div class="wifi-row">
+          <span class="wifi-label">Network</span>
+          <span class="wifi-value">${escHtml(data.wifiName)}</span>
+          <button class="copy-btn" onclick="copyText(${JSON.stringify(data.wifiName)}, this)">Copy</button>
+        </div>`;
+      }
+      if (data.wifiPassword) {
+        html += `<div class="wifi-row">
+          <span class="wifi-label">Password</span>
+          <span class="wifi-value">${escHtml(data.wifiPassword)}</span>
+          <button class="copy-btn" onclick="copyText(${JSON.stringify(data.wifiPassword)}, this)">Copy</button>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    /* Check-in / Check-out times */
+    if (data.checkInTime || data.checkOutTime) {
+      html += `<div class="section-block">
+        <div class="section-label">🕐 Times</div>
+        <div class="times-grid">`;
+      if (data.checkInTime) {
+        html += `<div class="time-item">
+          <div class="t-label">Check-in</div>
+          <div class="t-value">${escHtml(data.checkInTime)}</div>
+        </div>`;
+      }
+      if (data.checkOutTime) {
+        html += `<div class="time-item">
+          <div class="t-label">Check-out</div>
+          <div class="t-value">${escHtml(data.checkOutTime)}</div>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    /* Parking */
+    if (data.parkingInfo) {
+      html += section('🚗', 'Parking', escHtml(data.parkingInfo).replace(/\n/g,'<br>'));
+    }
+
+    /* Directions */
+    if (data.directions) {
+      html += section('🗺️', 'Directions', escHtml(data.directions).replace(/\n/g,'<br>'));
+    }
+
+    /* Emergency Contact */
+    if (data.emergencyContact) {
+      html += `
+        <div class="section-block">
+          <div class="section-label">📞 Emergency Contact</div>
+          <div class="section-value">
+            <a href="tel:${encodeURIComponent(data.emergencyContact)}" style="color:#ff385c;font-weight:700;font-size:19px">
+              ${escHtml(data.emergencyContact)}
+            </a>
+          </div>
+        </div>`;
+    }
+
+    /* Additional Notes */
+    if (data.additionalNotes) {
+      html += section('📝', 'Additional Notes', escHtml(data.additionalNotes).replace(/\n/g,'<br>'));
+    }
+
+    el.innerHTML = html;
+  }
+
+  function renderLocked(revealAt) {
+    const el = document.getElementById('content');
+    const revealDate = new Date(revealAt);
+    el.innerHTML = `
+      <div class="lock-screen">
+        <div class="lock-icon">🔒</div>
+        <h2>Instructions Locked</h2>
+        <p class="unlock-time">Unlocks on <strong>${fmtDateTime(revealAt)}</strong></p>
+        <div class="countdown-display" id="countdown">--:--:--</div>
+        <p class="hint-text">Check back closer to your check-in date.</p>
+      </div>`;
+
+    function tick() {
+      const ms = revealDate - Date.now();
+      document.getElementById('countdown').textContent = msToHms(ms);
+      if (ms <= 0) { location.reload(); }
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  function renderNoInstructions() {
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📋</div>
+        <p>Host hasn't added instructions yet.<br>
+           Contact them via <a href="/messages.html">messages</a>.</p>
+      </div>`;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  /* ── main fetch ────────────────────────────────────────────────── */
+  async function loadCheckinInstructions() {
+    try {
+      const res  = await fetch(`/api/bookings/${bookingId}/checkin-instructions`, {
+        headers: { Authorization: token }
+      });
+
+      document.getElementById('spinner').style.display = 'none';
+
+      if (res.status === 404) { renderNoInstructions(); return; }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">⚠️</div>
+            <p>${escHtml(err.error || 'Failed to load instructions.')}</p>
+          </div>`;
+        return;
+      }
+
+      const data = await res.json();
+
+      /* No instructions set at all */
+      if (!data || data.notSet) {
+        renderNoInstructions();
+        return;
+      }
+
+      /* Locked */
+      if (data.available === false) {
+        renderLocked(data.revealAt);
+        return;
+      }
+
+      /* Available */
+      renderAvailable(data);
+
+    } catch (err) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">⚠️</div>
+          <p>Network error. Please try again.</p>
+        </div>`;
+    }
+  }
+</script>
+
+</body>
+</html>

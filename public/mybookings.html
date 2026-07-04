@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .booking-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      display: grid;
+      grid-template-columns: 140px 1fr auto;
+      align-items: center;
+      gap: 20px;
+      padding: 0;
+      overflow: hidden;
+      margin-bottom: 16px;
+      transition: box-shadow 0.2s;
+    }
+    .booking-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.11); }
+    .booking-card img {
+      width: 140px;
+      height: 110px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .booking-info { padding: 16px 0; }
+    .booking-info h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .booking-info .city { color: #777; font-size: 13px; margin-bottom: 8px; }
+    .booking-info .dates { font-size: 14px; color: #444; margin-bottom: 6px; }
+    .booking-info .total { font-size: 15px; font-weight: 700; }
+    .booking-actions { padding: 16px 20px 16px 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .past { opacity: 0.55; }
+
+    @media (max-width: 600px) {
+      .booking-card { grid-template-columns: 100px 1fr; }
+      .booking-card img { height: 90px; width: 100px; }
+      .booking-actions { grid-column: 1 / -1; flex-direction: row; padding: 0 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/">← All Listings</a>
+    <a href="/host.html">Host</a>
+    <a href="/saved.html">❤️ Saved</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2 class="section-title">My Bookings</h2>
+  <div id="spinner" class="spinner"></div>
+  <div id="bookingsList"></div>
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  async function loadBookings() {
+    try {
+      const res  = await fetch('/api/bookings/mine', { headers: { Authorization: token } });
+      const data = await res.json();
+
+      document.getElementById('spinner').style.display = 'none';
+      const list = document.getElementById('bookingsList');
+
+      if (!res.ok) {
+        list.innerHTML = `<p style="color:#999;text-align:center;padding:40px">Failed to load bookings.</p>`;
+        return;
+      }
+
+      if (!data.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">🗓️</div>
+            <p>No bookings yet.</p>
+            <a href="/" class="btn" style="margin-top:16px">Browse Listings</a>
+          </div>`;
+        return;
+      }
+
+      const now = new Date();
+      list.innerHTML = data.map(b => {
+        const listing  = b.listingId;
+        const isPast   = new Date(b.checkOut) < now;
+        const isCancelled = b.status === 'cancelled';
+        const img      = listing?.image || 'https://placehold.co/280x220?text=No+Image';
+        const title    = listing?.title || 'Listing removed';
+        const city     = listing?.city  || '';
+        const listingId = listing?._id;
+
+        return `
+          <div class="booking-card ${isPast || isCancelled ? 'past' : ''}">
+            <img src="${img}" alt="${title}">
+            <div class="booking-info">
+              <h3>${title}</h3>
+              <p class="city">📍 ${city}</p>
+              <p class="dates">📅 ${fmtDate(b.checkIn)} → ${fmtDate(b.checkOut)} &nbsp;·&nbsp; ${b.nights || '?'} night${(b.nights||1)!==1?'s':''}</p>
+              <p class="total">€${b.totalPrice || 0} total &nbsp; <span class="badge badge-${b.status}">${b.status}</span></p>
+            </div>
+            <div class="booking-actions">
+              ${listingId ? `<a href="/listing.html?id=${listingId}" class="btn btn-secondary" style="padding:8px 14px;font-size:13px">View Listing</a>` : ''}
+              ${b.status === 'confirmed' ? `<a href="/checkin.html?bookingId=${b._id}" class="btn btn-secondary" style="padding:8px 14px;font-size:13px">🗝️ Check-in Info</a>` : ''}
+              ${!isPast && !isCancelled ? `<button onclick="cancelBooking('${b._id}', this)" class="btn-danger" style="padding:8px 14px;font-size:13px;border-radius:8px">Cancel</button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch (err) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('bookingsList').innerHTML = `<p style="color:#999;text-align:center;padding:40px">Network error.</p>`;
+    }
+  }
+
+  async function cancelBooking(id, btn) {
+    if (!confirm('Cancel this booking?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Cancelling…';
+
+    try {
+      const res  = await fetch(`/api/bookings/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: token }
+      });
+      const data = await res.json();
+
+      if (!res.ok) { toast(data.error || 'Cancel failed', 'error'); btn.disabled = false; btn.textContent = 'Cancel'; return; }
+
+      toast('Booking cancelled', 'info');
+      setTimeout(loadBookings, 600);
+    } catch {
+      toast('Network error', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Cancel';
+    }
+  }
+
+  loadBookings();
+</script>
+
+</body>
+</html>

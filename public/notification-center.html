@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications • StayMontenegro</title>
+  <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="color-utilities.css">
+  <link rel="stylesheet" href="/notification-center.css">
+</head>
+<body>
+  <!-- Navigation (Reuse from main app) -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-logo">🏠 StayMontenegro</a>
+      <div class="navbar-right">
+        <a href="/help" class="nav-link">Help</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/" id="logout-btn" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="notification-main">
+    <!-- Page Header -->
+    <div class="notifications-header">
+      <h1>🔔 Notifications</h1>
+      <div class="header-controls">
+        <button id="mark-all-read-btn" class="btn btn-secondary">Mark all as read</button>
+        <button id="filter-toggle-btn" class="btn btn-secondary">Filters</button>
+      </div>
+    </div>
+
+    <div class="notifications-container">
+      <!-- Filters Panel -->
+      <aside class="filters-panel">
+        <h3>Filters</h3>
+
+        <div class="filter-group">
+          <label>Status</label>
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" name="filter-status" value="unread" checked>
+              Unread
+            </label>
+            <label>
+              <input type="checkbox" name="filter-status" value="read" checked>
+              Read
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Type</label>
+          <select id="filter-type" class="form-control">
+            <option value="">All Notifications</option>
+            <optgroup label="Bookings">
+              <option value="booking_request">New Booking Request</option>
+              <option value="booking_confirmed">Booking Confirmed</option>
+              <option value="booking_cancelled">Booking Cancelled</option>
+              <option value="booking_modified">Booking Modified</option>
+              <option value="checkin_reminder">Check-in Reminder</option>
+              <option value="checkout_reminder">Check-out Reminder</option>
+            </optgroup>
+            <optgroup label="Messaging">
+              <option value="new_message">New Message</option>
+              <option value="message_reply">Message Reply</option>
+              <option value="message_digest">Message Digest</option>
+            </optgroup>
+            <optgroup label="Payments">
+              <option value="payment_received">Payment Received</option>
+              <option value="payment_failed">Payment Failed</option>
+              <option value="payout_processed">Payout Processed</option>
+              <option value="invoice_ready">Invoice Ready</option>
+            </optgroup>
+            <optgroup label="Reviews">
+              <option value="review_left">Review Left</option>
+              <option value="host_reply_review">Host Replied to Review</option>
+              <option value="low_rating_flag">Low Rating</option>
+            </optgroup>
+            <optgroup label="Account">
+              <option value="account_verified">Account Verified</option>
+              <option value="superhost_achieved">Superhost Achieved</option>
+              <option value="security_alert">Security Alert</option>
+            </optgroup>
+            <optgroup label="Admin">
+              <option value="dispute_raised">Dispute Raised</option>
+              <option value="fraud_alert">Fraud Alert</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Priority</label>
+          <select id="filter-priority" class="form-control">
+            <option value="">All Priorities</option>
+            <option value="urgent">🔴 Urgent</option>
+            <option value="high">🟠 High</option>
+            <option value="medium">🔵 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Sort By</label>
+          <select id="filter-sort" class="form-control">
+            <option value="-createdAt">Newest First</option>
+            <option value="createdAt">Oldest First</option>
+            <option value="-priority">High Priority First</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <button id="clear-filters-btn" class="btn btn-outline w-100">Clear Filters</button>
+        </div>
+      </aside>
+
+      <!-- Notifications List -->
+      <section class="notifications-list-section">
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <input
+            type="text"
+            id="search-input"
+            class="form-control"
+            placeholder="Search notifications..."
+            aria-label="Search notifications"
+          >
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-icon">🔔</div>
+          <h3>No notifications</h3>
+          <p>You're all caught up! Check back later for updates.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading notifications...</p>
+        </div>
+
+        <!-- Notifications List -->
+        <div id="notifications-list" class="notifications-list"></div>
+
+        <!-- Pagination -->
+        <div id="pagination-container" class="pagination" style="display: none;">
+          <button id="prev-page-btn" class="btn btn-secondary" disabled>← Previous</button>
+          <span id="page-info" class="page-info"></span>
+          <button id="next-page-btn" class="btn btn-secondary">Next →</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Notification Detail Modal -->
+  <div id="notification-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <button class="btn-close" id="modal-close-btn" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="priority-badge" id="modal-priority"></div>
+        <p id="modal-message" class="modal-message"></p>
+        <div id="modal-data" class="modal-data"></div>
+        <a id="modal-action-btn" class="btn btn-primary" style="display: none;"></a>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-archive-btn" class="btn btn-secondary">Archive</button>
+        <button id="modal-delete-btn" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div id="modal-overlay" class="modal-overlay" style="display: none;"></div>
+
+  <script src="/app.js"></script>
+  <script src="/notification-center.js"></script>
+</body>
+</html>

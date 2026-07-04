@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Profile — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Profile Header ───────────────────────────────────────────────────────── */
+    .profile-hero {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 40px 30px 32px;
+    }
+    .profile-hero-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+    }
+    .avatar-wrap {
+      flex-shrink: 0;
+    }
+    .avatar-circle {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #f0f0f0;
+    }
+    .avatar-initials {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff385c 0%, #bd1e59 100%);
+      color: white;
+      font-size: 40px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -1px;
+      flex-shrink: 0;
+    }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-info h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #222;
+    }
+    .profile-meta {
+      color: #777;
+      font-size: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .profile-meta span { display: flex; align-items: center; gap: 4px; }
+    .profile-bio {
+      color: #444;
+      line-height: 1.7;
+      font-size: 15px;
+      margin-top: 10px;
+      max-width: 620px;
+    }
+    .superhost-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      color: #7a4f00;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(253, 160, 133, 0.35);
+    }
+
+    /* ── Main content layout ─────────────────────────────────────────────────── */
+    .profile-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 30px 60px;
+    }
+
+    /* ── Section cards ───────────────────────────────────────────────────────── */
+    .section-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .section-card h2 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    /* ── Superhost stats ─────────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .stat-box {
+      text-align: center;
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 18px 10px;
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #222;
+      line-height: 1.1;
+    }
+    .stat-value .star-icon { color: #f5a623; font-size: 22px; }
+    .stat-label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* ── Listings grid ───────────────────────────────────────────────────────── */
+    .listings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .listing-card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+    .listing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .listing-card img {
+      width: 100%;
+      height: 175px;
+      object-fit: cover;
+      background: #e8e8e8;
+      display: block;
+    }
+    .listing-card-img-placeholder {
+      width: 100%;
+      height: 175px;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    .listing-card-body { padding: 14px 16px 18px; }
+    .listing-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .listing-card-city {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 7px;
+    }
+    .listing-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .listing-card-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: #222;
+    }
+    .listing-card-price span { font-weight: 400; color: #777; font-size: 13px; }
+    .listing-card-rating {
+      font-size: 13px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .listing-card-rating .star { color: #f5a623; }
+
+    /* ── Reviews summary ─────────────────────────────────────────────────────── */
+    .reviews-count-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #222;
+    }
+    .reviews-count-row .star { color: #f5a623; font-size: 22px; }
+
+    /* ── Empty state ─────────────────────────────────────────────────────────── */
+    .empty-block {
+      text-align: center;
+      color: #bbb;
+      padding: 36px 20px;
+    }
+    .empty-block .emoji { font-size: 42px; margin-bottom: 10px; }
+    .empty-block p { font-size: 14px; }
+
+    /* ── Responsive ──────────────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .profile-hero { padding: 28px 16px 24px; }
+      .profile-hero-inner { flex-direction: column; align-items: center; text-align: center; gap: 20px; }
+      .profile-info h1 { font-size: 22px; }
+      .profile-meta { justify-content: center; }
+      .profile-bio { text-align: left; }
+      .profile-content { padding: 20px 16px 40px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .listings-grid { grid-template-columns: 1fr 1fr; }
+      .section-card { padding: 18px 16px; }
+    }
+    @media (max-width: 440px) {
+      .listings-grid { grid-template-columns: 1fr; }
+      .avatar-circle, .avatar-initials { width: 88px; height: 88px; font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="/">← All Listings</a>
+    <a href="/mybookings.html" id="myBookingsLink" style="display:none">My Bookings</a>
+    <a href="/auth.html" id="authLink">Login / Register</a>
+    <button id="logoutBtn" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<!-- Profile hero (injected by JS) -->
+<div id="profileHero" style="display:none">
+  <div class="profile-hero">
+    <div class="profile-hero-inner">
+      <div class="avatar-wrap" id="avatarWrap"></div>
+      <div class="profile-info">
+        <div id="superhostBadge" style="display:none">
+          <span class="superhost-badge">🏆 Superhost</span>
+        </div>
+        <h1 id="displayName">—</h1>
+        <div class="profile-meta">
+          <span id="locationMeta" style="display:none"></span>
+          <span id="memberSinceMeta" style="display:none"></span>
+        </div>
+        <p class="profile-bio" id="bioPara" style="display:none"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="profile-content" id="profileContent" style="display:none">
+
+  <!-- Superhost stats -->
+  <div class="section-card" id="superhostStats" style="display:none">
+    <h2>⭐ Superhost Stats</h2>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-value" id="statRating">—</div>
+        <div class="stat-label">Avg Rating</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statBookings">—</div>
+        <div class="stat-label">Total Bookings</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statResponseRate">—</div>
+        <div class="stat-label">Response Rate</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statCancellationRate">—</div>
+        <div class="stat-label">Cancellation Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listings -->
+  <div class="section-card">
+    <h2 id="listingsHeading">Listings</h2>
+    <div class="listings-grid" id="listingsGrid">
+      <div class="empty-block">
+        <div class="emoji">🏠</div>
+        <p>Loading listings…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews summary -->
+  <div class="section-card" id="reviewsCard" style="display:none">
+    <h2>Reviews</h2>
+    <div class="reviews-count-row">
+      <span class="star">★</span>
+      <span id="reviewsSummary">0 reviews across all listings</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Error state -->
+<div class="center-page" id="errorState" style="display:none">
+  <div class="big-icon">😕</div>
+  <h1>Host not found</h1>
+  <p>This host profile doesn't exist or has been removed.</p>
+  <a href="/" class="btn" style="display:inline-block">Browse Listings</a>
+</div>
+
+<div class="spinner" id="spinner"></div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  // ── Auth UI ────────────────────────────────────────────────────────────────
+  const token = localStorage.getItem('token');
+  if (token) {
+    document.getElementById('authLink').style.display       = 'none';
+    document.getElementById('logoutBtn').style.display      = 'inline-block';
+    document.getElementById('myBookingsLink').style.display = 'inline-block';
+  }
+  function logout() { localStorage.removeItem('token'); window.location.href = '/auth.html'; }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function initials(name) {
+    if (!name) return '?';
+    return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  function starsHTML(avg, count) {
+    const rounded = Math.round(avg || 0);
+    const full    = '★'.repeat(Math.max(0, Math.min(5, rounded)));
+    const empty   = '☆'.repeat(5 - full.length);
+    const label   = count ? ` <span style="color:#bbb;font-size:13px">(${count})</span>` : '';
+    return `<span style="color:#f5a623">${full}${empty}</span>${label}`;
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+
+  // ── Load profile ──────────────────────────────────────────────────────────
+  async function loadProfile() {
+    const userId = new URLSearchParams(window.location.search).get('id');
+    const spinner = document.getElementById('spinner');
+
+    if (!userId) {
+      spinner.style.display = 'none';
+      document.getElementById('errorState').style.display = 'flex';
+      return;
+    }
+
+    try {
+      const res  = await fetch(`/api/users/${userId}/profile`);
+      const data = await res.json();
+
+      if (!res.ok || !data.user) {
+        spinner.style.display = 'none';
+        document.getElementById('errorState').style.display = 'flex';
+        return;
+      }
+
+      renderProfile(data);
+    } catch (err) {
+      spinner.style.display = 'none';
+      document.getElementById('errorState').style.display = 'flex';
+    }
+  }
+
+  function renderProfile({ user, listings, reviewCount }) {
+    document.title = `${user.displayName || user.email?.split('@')[0] || 'Host'} — StayMontenegro`;
+
+    // ── Avatar ───────────────────────────────────────────────────────────────
+    const avatarWrap = document.getElementById('avatarWrap');
+    const name = user.displayName || user.email?.split('@')[0] || '';
+    if (user.avatar) {
+      avatarWrap.innerHTML = `<img src="${user.avatar}" alt="${name}" class="avatar-circle">`;
+    } else {
+      avatarWrap.innerHTML = `<div class="avatar-initials">${initials(name)}</div>`;
+    }
+
+    // ── Name ─────────────────────────────────────────────────────────────────
+    document.getElementById('displayName').textContent = user.displayName || user.email?.split('@')[0] || 'Host';
+
+    // ── Superhost badge ──────────────────────────────────────────────────────
+    if (user.isSuperhost === true) {
+      document.getElementById('superhostBadge').style.display = '';
+    }
+
+    // ── Meta row ─────────────────────────────────────────────────────────────
+    if (user.location) {
+      const loc = document.getElementById('locationMeta');
+      loc.innerHTML = `📍 ${user.location}`;
+      loc.style.display = '';
+    }
+    if (user.memberSince || user.createdAt) {
+      const msEl = document.getElementById('memberSinceMeta');
+      msEl.innerHTML = `🗓 Member since ${formatDate(user.memberSince || user.createdAt)}`;
+      msEl.style.display = '';
+    }
+
+    // ── Bio ──────────────────────────────────────────────────────────────────
+    if (user.bio) {
+      const bio = document.getElementById('bioPara');
+      bio.textContent = user.bio;
+      bio.style.display = '';
+    }
+
+    // ── Superhost stats ──────────────────────────────────────────────────────
+    if (user.isSuperhost === true && user.superhostStats) {
+      const s = user.superhostStats;
+      document.getElementById('superhostStats').style.display = '';
+
+      const avgRating = (s.avgRating != null) ? Number(s.avgRating).toFixed(2) : '—';
+      document.getElementById('statRating').innerHTML =
+        `<span class="star-icon">⭐</span> ${avgRating}`;
+      document.getElementById('statBookings').textContent         = s.totalBookings    != null ? s.totalBookings    : '—';
+      document.getElementById('statResponseRate').textContent     = s.responseRate     != null ? `${s.responseRate}%`    : '—';
+      document.getElementById('statCancellationRate').textContent = s.cancellationRate != null ? `${s.cancellationRate}%` : '—';
+    }
+
+    // ── Listings ─────────────────────────────────────────────────────────────
+    const grid = document.getElementById('listingsGrid');
+    const listingsArr = listings || [];
+
+    document.getElementById('listingsHeading').textContent =
+      listingsArr.length ? `Listings (${listingsArr.length})` : 'Listings';
+
+    if (!listingsArr.length) {
+      grid.innerHTML = `
+        <div class="empty-block" style="grid-column:1/-1">
+          <div class="emoji">🏠</div>
+          <p>This host has no active listings at the moment.</p>
+        </div>`;
+    } else {
+      grid.innerHTML = listingsArr.map(l => {
+        const imgSrc = (l.images && l.images.length) ? l.images[0] : l.image;
+        const imgHTML = imgSrc
+          ? `<img src="${imgSrc}" alt="${l.title || ''}" loading="lazy">`
+          : `<div class="listing-card-img-placeholder">🏡</div>`;
+
+        const ratingHTML = (l.reviewCount && l.avgRating)
+          ? `<span class="listing-card-rating"><span class="star">★</span>${Number(l.avgRating).toFixed(1)} <span style="color:#bbb">(${l.reviewCount})</span></span>`
+          : `<span class="listing-card-rating" style="color:#bbb">No reviews yet</span>`;
+
+        return `
+          <a class="listing-card" href="/listing.html?id=${l._id}">
+            ${imgHTML}
+            <div class="listing-card-body">
+              <div class="listing-card-title">${l.title || 'Unnamed listing'}</div>
+              <div class="listing-card-city">📍 ${l.city || ''}</div>
+              <div class="listing-card-footer">
+                <div class="listing-card-price">€${l.price} <span>/ night</span></div>
+                ${ratingHTML}
+              </div>
+            </div>
+          </a>`;
+      }).join('');
+    }
+
+    // ── Reviews summary ──────────────────────────────────────────────────────
+    const totalReviews = (reviewCount != null) ? reviewCount : 0;
+    if (totalReviews > 0) {
+      document.getElementById('reviewsCard').style.display = '';
+      document.getElementById('reviewsSummary').textContent =
+        `${totalReviews} review${totalReviews !== 1 ? 's' : ''} across all listings`;
+    }
+
+    // ── Show page ────────────────────────────────────────────────────────────
+    document.getElementById('spinner').style.display      = 'none';
+    document.getElementById('profileHero').style.display  = '';
+    document.getElementById('profileContent').style.display = '';
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/">← Home</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <h2 class="section-title">Admin Dashboard</h2>
+
+  <div style="display: flex; gap: 12px; margin-bottom: 28px;">
+    <button onclick="showSection('users')"    id="btnUsers"    class="btn-secondary">👥 Users</button>
+    <button onclick="showSection('bookings')" id="btnBookings">📅 Bookings</button>
+    <button onclick="showSection('listings')" id="btnListings" class="btn-secondary">🏠 Listings</button>
+  </div>
+
+  <!-- Users -->
+  <div id="sectionUsers">
+    <div id="usersLoading" class="spinner"></div>
+    <table id="usersTable" style="display:none">
+      <thead>
+        <tr><th>#</th><th>Email</th><th>Admin</th><th>Joined</th></tr>
+      </thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Bookings -->
+  <div id="sectionBookings" style="display:none">
+    <div id="bookingsLoading" class="spinner"></div>
+    <table id="bookingsTable" style="display:none">
+      <thead>
+        <tr><th>Listing</th><th>User</th><th>Check-in</th><th>Check-out</th><th>Total</th><th>Status</th></tr>
+      </thead>
+      <tbody id="bookingsBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Listings -->
+  <div id="sectionListings" style="display:none">
+    <div id="listingsLoading" class="spinner"></div>
+    <table id="listingsTable" style="display:none">
+      <thead>
+        <tr><th>Title</th><th>City</th><th>Price/night</th><th>Added</th><th>Action</th></tr>
+      </thead>
+      <tbody id="listingsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { alert('Admin access only.'); window.location.href = '/auth.html'; }
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+
+  function showSection(name) {
+    ['users', 'bookings', 'listings'].forEach(s => {
+      document.getElementById(`section${capitalize(s)}`).style.display = s === name ? '' : 'none';
+      const btn = document.getElementById(`btn${capitalize(s)}`);
+      btn.className = s === name ? '' : 'btn-secondary';
+    });
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function fmtDate(d)     { return new Date(d).toLocaleDateString(); }
+
+  async function loadUsers() {
+    const res  = await fetch('/api/admin/users', { headers: { Authorization: token *** });
+    const data = await res.json();
+
+    if (!res.ok) { alert(data.error || 'Access denied'); window.location.href = '/'; return; }
+
+    document.getElementById('usersLoading').style.display  = 'none';
+    document.getElementById('usersTable').style.display    = '';
+    document.getElementById('usersBody').innerHTML = data.map((u, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${u.email}</td>
+        <td>${u.isAdmin ? '✅' : '—'}</td>
+        <td>${fmtDate(u.createdAt)}</td>
+      </tr>`).join('');
+  }
+
+  async function loadBookings() {
+    const res  = await fetch('/api/admin/bookings', { headers: { Authorization: token *** });
+    const data = await res.json();
+
+    document.getElementById('bookingsLoading').style.display = 'none';
+    document.getElementById('bookingsTable').style.display   = '';
+    document.getElementById('bookingsBody').innerHTML = data.map(b => `
+      <tr>
+        <td>${b.listingId?.title || '—'}</td>
+        <td>${b.userId?.email || '—'}</td>
+        <td>${fmtDate(b.checkIn)}</td>
+        <td>${fmtDate(b.checkOut)}</td>
+        <td>€${b.totalPrice || 0}</td>
+        <td><span class="badge badge-${b.status}">${b.status}</span></td>
+      </tr>`).join('');
+  }
+
+  async function loadListings() {
+    const res  = await fetch('/api/listings', { headers: { Authorization: token *** });
+    const data = await res.json();
+
+    document.getElementById('listingsLoading').style.display = 'none';
+    document.getElementById('listingsTable').style.display   = '';
+    document.getElementById('listingsBody').innerHTML = data.map(l => `
+      <tr>
+        <td><a href="/listing.html?id=${l._id}">${l.title}</a></td>
+        <td>${l.city}</td>
+        <td>€${l.price}</td>
+        <td>${fmtDate(l.createdAt)}</td>
+        <td><button class="btn-danger" onclick="deleteListing('${l._id}', this)" style="padding:6px 12px;font-size:13px">Delete</button></td>
+      </tr>`).join('');
+  }
+
+  async function deleteListing(id, btn) {
+    if (!confirm('Delete this listing?')) return;
+    btn.disabled = true;
+    const res = await fetch(`/api/listings/${id}`, { method: 'DELETE', headers: { Authorization: token *** });
+    if (res.ok) {
+      btn.closest('tr').remove();
+    } else {
+      alert('Delete failed'); btn.disabled = false;
+    }
+  }
+
+  // Boot
+  loadUsers();
+  loadBookings();
+  loadListings();
+</script>
+
+</body>
+</html>

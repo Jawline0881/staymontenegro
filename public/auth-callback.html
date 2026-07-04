@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+</header>
+
+<div class="center-page">
+  <div class="spinner"></div>
+  <p style="color:#999; margin-top:16px">Signing you in…</p>
+</div>
+
+<script src="toast.js"></script>
+<script>
+  // This page handles the Google OAuth redirect
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+  const email  = params.get('email');
+
+  if (token) {
+    localStorage.setItem('token', token);
+    if (email) localStorage.setItem('userEmail', decodeURIComponent(email));
+    toast('Signed in with Google!', 'success');
+    setTimeout(() => window.location.href = '/', 800);
+  } else {
+    window.location.href = '/auth.html?error=google';
+  }
+</script>
+
+</body>
+</html>

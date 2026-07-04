@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Listing — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .upload-area {
+      border: 2px dashed #ddd; border-radius: 10px; padding: 28px; text-align: center;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative;
+    }
+    .upload-area:hover, .upload-area.drag-over { border-color: #ff385c; background: #fff8f9; }
+    .upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-preview { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; margin-top: 12px; display: none; }
+    .upload-hint { color: #aaa; font-size: 14px; margin-top: 6px; }
+    .amenities-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .amenity-check { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e0e0e0; cursor: pointer; transition: all 0.15s; font-size: 14px; font-weight: 500; }
+    .amenity-check:hover { border-color: #ff385c; background: #fff8f9; }
+    .amenity-check input { accent-color: #ff385c; width: 16px; height: 16px; cursor: pointer; }
+    .amenity-check.checked { border-color: #ff385c; background: #fff0f3; color: #ff385c; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/">← Back</a>
+    <button id="logoutBtn" style="display:none" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="form-box" style="max-width:580px">
+  <h2>Add a Listing</h2>
+  <div id="alertBox" class="alert"></div>
+
+  <form id="form" onsubmit="submitListing(event)">
+    <div class="form-group">
+      <label>Title</label>
+      <input id="title" placeholder="Cozy apartment in Kotor" required>
+    </div>
+    <div class="form-group">
+      <label>City</label>
+      <input id="city" placeholder="Kotor" required>
+    </div>
+
+    <!-- Image gallery (multiple) -->
+    <div class="form-group">
+      <label>Photos <span style="color:#aaa;font-weight:400">(first is the cover · up to 10)</span></label>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="imageFile" accept="image/*" multiple onchange="previewImages(event)">
+        <div id="uploadPlaceholder">
+          📷 <strong>Click or drag to upload photos</strong>
+          <p class="upload-hint">JPG, PNG or WebP · max 5 MB each · up to 10</p>
+        </div>
+      </div>
+      <div id="galleryPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+      <input id="imageUrl" type="url" placeholder="Or paste an image URL" style="margin-top:8px" oninput="onUrlInput()">
+    </div>
+
+    <div class="form-group">
+      <label>Price per night (€)</label>
+      <input id="price" type="number" min="1" placeholder="50" required>
+    </div>
+
+    <div class="form-group">
+      <label>Max guests</label>
+      <input id="maxGuests" type="number" min="1" value="4" placeholder="4" required>
+    </div>
+
+    <!-- Seasonal pricing (Feature #1) -->
+    <div class="form-group">
+      <label>Seasonal pricing <span style="color:#aaa;font-weight:400">(optional — override the base price for date ranges)</span></label>
+      <div id="rulesList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+      <button type="button" class="btn-secondary" onclick="addRule()" style="padding:8px 14px;font-size:13px">+ Add seasonal rate</button>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="description" placeholder="Describe the space, location, amenities…"></textarea>
+    </div>
+
+    <!-- Amenities -->
+    <div class="form-group">
+      <label>Amenities</label>
+      <div class="amenities-grid" id="amenitiesGrid">
+        <div class="spinner" style="margin:10px auto;width:20px;height:20px;border-width:2px"></div>
+      </div>
+    </div>
+
+    <button class="btn-block" type="submit" id="submitBtn">Publish Listing</button>
+  </form>
+</div>
+
+<script src="toast.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { toast('Please login to add a listing', 'warning'); setTimeout(() => window.location.href = '/auth.html', 800); }
+  else document.getElementById('logoutBtn').style.display = 'inline-block';
+
+  function logout() { localStorage.removeItem('token'); window.location.href = '/auth.html'; }
+
+  function showAlert(msg, type = 'error') {
+    const el = document.getElementById('alertBox');
+    el.textContent = msg; el.className = `alert alert-${type} show`;
+  }
+
+  // Load amenity checkboxes
+  async function loadAmenityOptions() {
+    try {
+      const res  = await fetch('/api/amenities');
+      const list = await res.json();
+      document.getElementById('amenitiesGrid').innerHTML = list.map(a => `
+        <label class="amenity-check" id="achk-${a.replace(/\s/g,'_')}">
+          <input type="checkbox" value="${a}" onchange="this.closest('.amenity-check').classList.toggle('checked', this.checked)">
+          ${a}
+        </label>`).join('');
+    } catch {
+      document.getElementById('amenitiesGrid').innerHTML = '<p style="color:#aaa;font-size:13px">Could not load amenities</p>';
+    }
+  }
+
+  function getSelectedAmenities() {
+    return [...document.querySelectorAll('#amenitiesGrid input:checked')].map(el => el.value);
+  }
+
+  // ── Seasonal pricing rule editor (Feature #1) ──
+  function addRule(rule = {}) {
+    const row = document.createElement('div');
+    row.className = 'rule-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center';
+    row.innerHTML = `
+      <input class="r-label" placeholder="Label (e.g. Summer)" value="${rule.label || ''}" style="font-size:13px;padding:8px">
+      <input class="r-start" type="date" value="${rule.start || ''}" style="font-size:13px;padding:8px">
+      <input class="r-end" type="date" value="${rule.end || ''}" style="font-size:13px;padding:8px">
+      <input class="r-price" type="number" min="0" placeholder="€/night" value="${rule.price || ''}" style="font-size:13px;padding:8px;width:90px">
+      <button type="button" onclick="this.closest('.rule-row').remove()" class="btn-danger" style="padding:6px 10px;font-size:13px">×</button>`;
+    document.getElementById('rulesList').appendChild(row);
+  }
+
+  function collectRules() {
+    return [...document.querySelectorAll('.rule-row')].map(r => ({
+      label: r.querySelector('.r-label').value.trim(),
+      start: r.querySelector('.r-start').value,
+      end:   r.querySelector('.r-end').value,
+      price: Number(r.querySelector('.r-price').value),
+    })).filter(r => r.start && r.end && r.price > 0);
+  }
+
+  // Selected files + URLs accumulate into one gallery
+  let pickedFiles = [];   // File objects
+  let pickedUrls  = [];   // pasted URLs
+
+  function renderGallery() {
+    const box = document.getElementById('galleryPreview');
+    const items = [
+      ...pickedUrls.map((u, i) => ({ src: u, type: 'url', i })),
+      ...pickedFiles.map((f, i) => ({ src: URL.createObjectURL(f), type: 'file', i })),
+    ];
+    if (!items.length) { box.innerHTML = ''; return; }
+    box.innerHTML = items.map((it, idx) => `
+      <div style="position:relative;width:84px;height:64px;border-radius:8px;overflow:hidden;border:${idx===0?'2px solid #ff385c':'1px solid #ddd'}">
+        <img src="${it.src}" style="width:100%;height:100%;object-fit:cover">
+        ${idx === 0 ? '<span style="position:absolute;bottom:0;left:0;right:0;background:#ff385c;color:#fff;font-size:9px;text-align:center;font-weight:700">COVER</span>' : ''}
+        <button type="button" onclick="removePic('${it.type}',${it.i})" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:11px;line-height:1;cursor:pointer;padding:0">×</button>
+      </div>`).join('');
+  }
+
+  function removePic(type, i) {
+    if (type === 'url') pickedUrls.splice(i, 1);
+    else pickedFiles.splice(i, 1);
+    renderGallery();
+  }
+
+  function previewImages(e) {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    pickedFiles = pickedFiles.concat(files).slice(0, 10);
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    renderGallery();
+    e.target.value = ''; // allow re-pick of same file
+  }
+
+  function onUrlInput() {
+    // handled on blur/enter via add button — keep simple: add on Enter
+  }
+  document.getElementById('imageUrl').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const url = e.target.value.trim();
+      if (url) { pickedUrls.push(url); e.target.value = ''; document.getElementById('uploadPlaceholder').style.display = 'none'; renderGallery(); }
+    }
+  });
+
+  const area = document.getElementById('uploadArea');
+  area.addEventListener('dragover',  e => { e.preventDefault(); area.classList.add('drag-over'); });
+  area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+  area.addEventListener('drop',      e => {
+    e.preventDefault(); area.classList.remove('drag-over');
+    const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
+    if (files.length) { pickedFiles = pickedFiles.concat(files).slice(0, 10); document.getElementById('uploadPlaceholder').style.display = 'none'; renderGallery(); }
+  });
+
+  async function uploadFiles(files) {
+    const formData = new FormData();
+    files.forEach(f => formData.append('images', f));
+    const res  = await fetch('/api/upload-multiple', { method: 'POST', headers: { 'Authorization': token }, body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.urls;
+  }
+
+  async function submitListing(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Publishing…'; btn.disabled = true;
+
+    try {
+      let urls = [...pickedUrls];
+      if (pickedFiles.length) { btn.textContent = 'Uploading photos…'; urls = urls.concat(await uploadFiles(pickedFiles)); }
+      // Any unsubmitted URL still in the input box? include it.
+      const pendingUrl = document.getElementById('imageUrl').value.trim();
+      if (pendingUrl) urls.push(pendingUrl);
+
+      const listing = {
+        title:       document.getElementById('title').value.trim(),
+        city:        document.getElementById('city').value.trim(),
+        images:      urls,
+        image:       urls[0] || '',
+        price:       Number(document.getElementById('price').value),
+        maxGuests:   Number(document.getElementById('maxGuests').value) || 4,
+        description: document.getElementById('description').value.trim(),
+        amenities:   getSelectedAmenities(),
+        pricingRules: collectRules(),
+      };
+
+      const res  = await fetch('/api/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
+        body: JSON.stringify(listing)
+      });
+      const data = await res.json();
+      if (!res.ok) { showAlert(data.error || 'Failed to add listing'); btn.textContent = 'Publish Listing'; btn.disabled = false; return; }
+
+      toast('Listing published!', 'success');
+      setTimeout(() => window.location.href = '/', 900);
+    } catch (err) {
+      showAlert(err.message || 'Something went wrong');
+      btn.textContent = 'Publish Listing'; btn.disabled = false;
+    }
+  }
+
+  loadAmenityOptions();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accept House Rules — StayMontenegro</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      padding: 30px;
+      border-bottom: 1px solid #eee;
+      background: linear-gradient(135deg, #F2B800 0%, #ff6b7f 100%);
+      color: white;
+    }
+
+    .modal-header h2 { font-size: 24px; margin-bottom: 8px; }
+    .modal-header p { font-size: 14px; opacity: 0.95; }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+    }
+
+    .rules-container {
+      margin-bottom: 25px;
+    }
+
+    .rules-section {
+      margin-bottom: 25px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #F2B800;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .rule-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f7f7f7;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .rule-item:hover { background: #eee; }
+
+    .rule-checkbox {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      cursor: pointer;
+      accent-color: #F2B800;
+    }
+
+    .rule-text {
+      flex: 1;
+    }
+
+    .rule-title {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rule-badge {
+      display: inline-block;
+      background: #F2B800;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .rule-description {
+      font-size: 13px;
+      color: #777;
+      line-height: 1.4;
+    }
+
+    .acknowledgment-warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #856404;
+    }
+
+    .modal-footer {
+      padding: 20px 30px;
+      border-top: 1px solid #eee;
+      background: #fafafa;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #F2B800;
+      color: white;
+    }
+
+    .btn-primary:hover { background: #e6204a; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: white;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover { background: #f7f7f7; }
+
+    .success-message {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      color: #155724;
+      font-size: 13px;
+      display: none;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      border-left: 4px solid #F2B800;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      color: #FFC107;
+      font-size: 13px;
+      display: none;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #777;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #F2B800;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .category-icon {
+      display: inline-block;
+      font-size: 18px;
+    }
+
+    @media (max-width: 640px) {
+      .modal-content { max-width: 100%; }
+      .modal-header { padding: 20px; }
+      .modal-header h2 { font-size: 20px; }
+      .modal-body { padding: 20px; }
+      .modal-footer { padding: 15px 20px; flex-direction: column; }
+      .btn { width: 100%; }
+      .rule-item { padding: 10px; }
+    }
+  </style>
+    <link rel="stylesheet" href="color-utilities.css">
+    </head>
+<body>
+
+<div class="modal-overlay" id="rulesModalOverlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="listingTitle">House Rules</h2>
+      <p>Please read and acknowledge these house rules before completing your booking</p>
+    </div>
+
+    <div class="modal-body">
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage">✓ Rules acknowledged successfully!</div>
+
+      <div class="loading" id="loadingState">
+        <div class="spinner"></div>
+        <span>Loading house rules...</span>
+      </div>
+
+      <div id="rulesContent" style="display: none;">
+        <div class="acknowledgment-warning" id="warningBox"></div>
+
+        <div class="rules-container">
+          <!-- Required rules section -->
+          <div class="rules-section" id="requiredRulesSection" style="display: none;">
+            <div class="section-title">
+              <span class="category-icon">🔴</span>
+              <span>Required Rules (Must Acknowledge)</span>
+            </div>
+            <div id="requiredRulesList"></div>
+          </div>
+
+          <!-- Optional rules section -->
+          <div class="rules-section" id="optionalRulesSection" style="display: none;">
+            <div class="section-title">
+              <span class="category-icon">◯</span>
+              <span>Additional Information</span>
+            </div>
+            <div id="optionalRulesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cancelAcknowledge()">Cancel</button>
+      <button class="btn btn-primary" id="acknowledgeBtn" onclick="submitAcknowledge()" style="display: none;">
+        Accept & Continue Booking
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * Guest Rule Acknowledgment Handler
+ * Manages guest acknowledgment of house rules before booking confirmation
+ */
+
+let currentBookingId = null;
+let currentListingId = null;
+let allRules = [];
+let categoryMeta = {};
+
+// Initialize modal with booking rules
+async function initializeRulesModal(bookingId, listingId, listingTitle) {
+  currentBookingId = bookingId;
+  currentListingId = listingId;
+
+  document.getElementById('listingTitle').textContent = `House Rules — ${listingTitle}`;
+  document.getElementById('rulesContent').style.display = 'none';
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('acknowledgeBtn').style.display = 'none';
+
+  try {
+    // Fetch rules for this listing
+    const rulesRes = await fetch(`/api/listings/${listingId}/rules/guest-view`);
+    if (!rulesRes.ok) throw new Error('Failed to fetch rules');
+
+    const rulesData = await rulesRes.json();
+    allRules = rulesData.rules;
+    categoryMeta = rulesData.meta || {};
+
+    // Display rules
+    displayRules(rulesData.rules, rulesData.grouped);
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('rulesContent').style.display = 'block';
+    document.getElementById('acknowledgeBtn').style.display = 'block';
+  } catch (err) {
+    console.error('Error loading rules:', err);
+    showError('Failed to load house rules. Please try again.');
+  }
+}
+
+// Display rules grouped by category
+function displayRules(rules, grouped) {
+  const requiredDiv = document.getElementById('requiredRulesList');
+  const optionalDiv = document.getElementById('optionalRulesList');
+
+  const requiredRules = rules.filter(r => r.required);
+  const optionalRules = rules.filter(r => !r.required);
+
+  let requiredHtml = '';
+  let optionalHtml = '';
+
+  // Build required rules
+  requiredRules.forEach(rule => {
+    const icon = categoryMeta[rule.category]?.icon || '📋';
+    requiredHtml += `
+      <div class="rule-item">
+        <input type="checkbox" class="rule-checkbox rule-checkbox-required" value="${rule.ruleId}" checked onchange="updateAcknowledgmentState()">
+        <div class="rule-text">
+          <div class="rule-title">
+            <span class="category-icon">${icon}</span>
+            ${rule.title}
+            <span class="rule-badge">REQUIRED</span>
+          </div>
+          ${rule.description ? `<div class="rule-description">${rule.description}</div>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  // Build optional rules
+  optionalRules.forEach(rule => {
+    const icon = categoryMeta[rule.category]?.icon || '📋';
+    optionalHtml += `
+      <div class="rule-item">
+        <input type="checkbox" class="rule-checkbox rule-checkbox-optional" value="${rule.ruleId}">
+        <div class="rule-text">
+          <div class="rule-title">
+            <span class="category-icon">${icon}</span>
+            ${rule.title}
+          </div>
+          ${rule.description ? `<div class="rule-description">${rule.description}</div>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  // Display sections
+  if (requiredRules.length > 0) {
+    requiredDiv.innerHTML = requiredHtml;
+    document.getElementById('requiredRulesSection').style.display = 'block';
+
+    // Auto-check required rules (they're already checked above)
+    document.querySelectorAll('.rule-checkbox-required').forEach(cb => {
+      cb.checked = true;
+      cb.onclick = () => {
+        if (!cb.checked) {
+          cb.checked = true; // Prevent unchecking required rules
+        }
+      };
+    });
+  }
+
+  if (optionalRules.length > 0) {
+    optionalDiv.innerHTML = optionalHtml;
+    document.getElementById('optionalRulesSection').style.display = 'block';
+  }
+
+  // Update warning
+  const totalRequired = requiredRules.length;
+  const totalOptional = optionalRules.length;
+  const totalAll = totalRequired + totalOptional;
+
+  let warningText = `You must acknowledge all <strong>${totalRequired}</strong> required rule${totalRequired !== 1 ? 's' : ''} before booking.`;
+  if (totalOptional > 0) {
+    warningText += ` There are also <strong>${totalOptional}</strong> additional rule${totalOptional !== 1 ? 's' : ''} for your information.`;
+  }
+
+  document.getElementById('warningBox').innerHTML = warningText;
+
+  updateAcknowledgmentState();
+}
+
+// Update acknowledgment state
+function updateAcknowledgmentState() {
+  const requiredCheckboxes = document.querySelectorAll('.rule-checkbox-required');
+  const btn = document.getElementById('acknowledgeBtn');
+
+  // Check if all required rules are checked
+  const allRequired = Array.from(requiredCheckboxes).every(cb => cb.checked);
+  btn.disabled = !allRequired;
+}
+
+// Submit acknowledgment
+async function submitAcknowledge() {
+  const btn = document.getElementById('acknowledgeBtn');
+  btn.disabled = true;
+
+  const acknowledgedCheckboxes = document.querySelectorAll('.rule-checkbox:checked');
+  const acknowledgedRuleIds = Array.from(acknowledgedCheckboxes).map(cb => cb.value);
+
+  try {
+    const res = await fetch(`/api/bookings/${currentBookingId}/acknowledge-rules`, {
+      method: 'POST',
+      headers: {
+        'Authorization': localStorage.getItem('token'),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ acknowledgedRuleIds })
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to acknowledge rules');
+    }
+
+    showSuccess('✓ Rules acknowledged successfully!');
+    setTimeout(() => {
+      window.parent.postMessage({ type: 'rulesAcknowledged' }, '*');
+      closeModal();
+    }, 1500);
+  } catch (err) {
+    console.error('Error acknowledging rules:', err);
+    showError(err.message || 'Failed to acknowledge rules');
+    btn.disabled = false;
+  }
+}
+
+// Cancel acknowledgment
+function cancelAcknowledge() {
+  if (confirm('Are you sure you want to cancel? You must acknowledge the house rules to complete your booking.')) {
+    closeModal();
+  }
+}
+
+// Close modal
+function closeModal() {
+  document.getElementById('rulesModalOverlay').style.display = 'none';
+  window.parent.postMessage({ type: 'rulesClosed' }, '*');
+}
+
+// Show error
+function showError(message) {
+  const errorDiv = document.getElementById('errorMessage');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  setTimeout(() => {
+    errorDiv.style.display = 'none';
+  }, 5000);
+}
+
+// Show success
+function showSuccess(message) {
+  const successDiv = document.getElementById('successMessage');
+  successDiv.innerHTML = message;
+  successDiv.style.display = 'block';
+}
+
+// Expose functions globally for HTML onclick handlers
+window.initializeRulesModal = initializeRulesModal;
+window.submitAcknowledge = submitAcknowledge;
+window.cancelAcknowledge = cancelAcknowledge;
+window.closeModal = closeModal;
+window.updateAcknowledgmentState = updateAcknowledgmentState;
+</script>
+
+</body>
+</html>

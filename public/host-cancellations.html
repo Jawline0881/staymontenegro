@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cancellation Management - StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="color-utilities.css">
+  <style>
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .header { margin-bottom: 30px; }
+    .header h1 { font-size: 32px; color: #333; margin-bottom: 8px; }
+    .header p { color: #666; font-size: 16px; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #F2B800;
+    }
+    
+    .stat-label { color: #999; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #333; margin-top: 8px; }
+    
+    .stat-card.pending { border-left-color: #ffa500; }
+    .stat-card.approved { border-left-color: #06a77d; }
+    .stat-card.total { border-left-color: #0066cc; }
+    
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+      padding: 10px 16px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .filter-btn.active {
+      background: #F2B800;
+      color: white;
+      border-color: #F2B800;
+    }
+    
+    .filter-btn:hover {
+      border-color: #F2B800;
+    }
+    
+    .cancellations-list {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .cancellation-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 20px;
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      align-items: center;
+    }
+    
+    .cancellation-item:last-child { border-bottom: none; }
+    
+    .cancellation-info h3 { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 8px; }
+    .cancellation-info p { font-size: 13px; color: #666; margin: 4px 0; }
+    .cancellation-info strong { color: #333; }
+    
+    .refund-details {
+      background: #f9f9f9;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    .refund-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin: 4px 0;
+    }
+    
+    .refund-row.total {
+      border-top: 1px solid #ddd;
+      padding-top: 4px;
+      margin-top: 4px;
+      font-weight: 600;
+      color: #06a77d;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff8e6; color: #9a6700; }
+    .status-approved { background: #f0fdf4; color: #166534; }
+    .status-rejected { background: #fef2f2; color: #7f1d1d; }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+    }
+    
+    .btn-small {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .btn-approve {
+      background: #06a77d;
+      color: white;
+    }
+    
+    .btn-approve:hover {
+      background: #058064;
+    }
+    
+    .btn-reject {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-reject:hover {
+      background: #e0e0e0;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    
+    .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+    
+    .loading { text-align: center; padding: 40px; }
+    .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #F2B800; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+    .modal-backdrop.active { display: block; }
+    
+    .modal-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .modal-dialog.active { display: block; }
+    
+    .modal-dialog h3 { margin-bottom: 16px; color: #333; }
+    .modal-dialog p { color: #666; margin-bottom: 12px; line-height: 1.5; }
+    
+    .modal-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: inherit;
+      margin-bottom: 16px;
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    .modal-textarea:focus {
+      outline: none;
+      border-color: #F2B800;
+      box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1);
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .modal-actions .btn-small {
+      flex: 1;
+    }
+    
+    @media (max-width: 900px) {
+      .cancellation-item {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .action-buttons {
+        flex-direction: row;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="/index.html" class="nav-brand">🏠 StayMontenegro</a>
+    <div class="nav-links">
+      <a href="/mybookings.html" class="nav-link">Dashboard</a>
+      <a href="/host.html" class="nav-link">Properties</a>
+      <a href="/host-cancellations.html" class="nav-link active">Cancellations</a>
+      <a href="/mybookings.html" class="nav-link">Bookings</a>
+      <button onclick="logout()" class="btn-logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="header">
+    <h1>📋 Cancellation Management</h1>
+    <p>Review and manage guest cancellation requests</p>
+  </div>
+  
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card total">
+      <div class="stat-label">Total Cancellations</div>
+      <div class="stat-value" id="statsTotal">0</div>
+    </div>
+    <div class="stat-card pending">
+      <div class="stat-label">Pending Approval</div>
+      <div class="stat-value" id="statsPending">0</div>
+    </div>
+    <div class="stat-card approved">
+      <div class="stat-label">Approved / Refunded</div>
+      <div class="stat-value" id="statsApproved">0</div>
+    </div>
+    <div class="stat-card approved">
+      <div class="stat-label">Total Refunded</div>
+      <div class="stat-value">€<span id="statsTotalRefunded">0</span></div>
+    </div>
+  </div>
+  
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterCancellations('all')">All</button>
+    <button class="filter-btn" onclick="filterCancellations('pending_approval')">Pending</button>
+    <button class="filter-btn" onclick="filterCancellations('refunded')">Approved</button>
+    <button class="filter-btn" onclick="filterCancellations('rejected')">Rejected</button>
+  </div>
+  
+  <!-- Cancellations List -->
+  <div id="loadingContainer" class="loading" style="display: none;">
+    <div class="spinner"></div>
+    <p style="margin-top: 16px; color: #999;">Loading cancellations...</p>
+  </div>
+  
+  <div id="emptyState" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">📭</div>
+    <h3>No cancellations yet</h3>
+    <p>Guests haven't requested any cancellations on your properties.</p>
+  </div>
+  
+  <div class="cancellations-list" id="cancellationsList" style="display: none;">
+  </div>
+</div>
+
+<!-- Rejection Modal -->
+<div class="modal-backdrop" id="rejectModalBackdrop"></div>
+<div class="modal-dialog" id="rejectModal">
+  <h3>Reject Cancellation</h3>
+  <p>Why are you declining this cancellation request?</p>
+  <textarea class="modal-textarea" id="rejectionReason" placeholder="Enter a reason (optional)..."></textarea>
+  <div class="modal-actions">
+    <button class="btn-small btn-reject" onclick="closeRejectModal()">Cancel</button>
+    <button class="btn-small btn-approve" onclick="submitReject()">Reject Request</button>
+  </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+let currentRejectingId = null;
+
+async function loadCancellations() {
+  const token = localStorage.getItem('token');
+  
+  try {
+    document.getElementById('loadingContainer').style.display = 'block';
+    document.getElementById('cancellationsList').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    
+    const url = currentFilter === 'all'
+      ? '/api/dashboard/cancellations'
+      : `/api/dashboard/cancellations?status=${currentFilter}`;
+    
+    const res = await fetch(url, {
+      headers: { 'Authorization': token }
+    });
+    
+    if (!res.ok) throw new Error('Failed to load');
+    
+    const data = await res.json();
+    
+    // Update stats
+    document.getElementById('statsTotal').textContent = data.stats.total;
+    document.getElementById('statsPending').textContent = data.stats.pending;
+    document.getElementById('statsApproved').textContent = data.stats.approved;
+    document.getElementById('statsTotalRefunded').textContent = data.stats.totalRefunded.toFixed(2);
+    
+    document.getElementById('loadingContainer').style.display = 'none';
+    
+    if (data.cancellations.length === 0) {
+      document.getElementById('emptyState').style.display = 'block';
+      return;
+    }
+    
+    // Render cancellations
+    document.getElementById('cancellationsList').innerHTML = data.cancellations.map(c => `
+      <div class="cancellation-item">
+        <div class="cancellation-info">
+          <h3>${c.guestId?.displayName || c.guestId?.email || 'Unknown'}</h3>
+          <p><strong>Property:</strong> ${c.listingId?.title || 'Unknown'}</p>
+          <p><strong>Policy:</strong> ${c.cancellationPolicy}</p>
+          ${c.reason ? `<p><strong>Reason:</strong> "${c.reason}"</p>` : ''}
+        </div>
+        
+        <div class="cancellation-info">
+          <h3>Booking Details</h3>
+          <p><strong>Check-in:</strong> ${new Date(c.checkInDate).toLocaleDateString()}</p>
+          <p><strong>Days before check-in:</strong> ${c.daysBeforeCheckIn}</p>
+          <p><strong>Days since cancelled:</strong> ${Math.floor((new Date() - new Date(c.createdAt)) / (1000 * 60 * 60 * 24))}</p>
+        </div>
+        
+        <div class="refund-details">
+          <div class="refund-row">
+            <span>Original:</span>
+            <span>€${c.originalPrice.toFixed(2)}</span>
+          </div>
+          <div class="refund-row">
+            <span>Refund %:</span>
+            <span>${c.refundPercentage}%</span>
+          </div>
+          <div class="refund-row">
+            <span>Guest gets:</span>
+            <span>€${c.refundAmount.toFixed(2)}</span>
+          </div>
+          <div class="refund-row">
+            <span>Fee (5%):</span>
+            <span>-€${c.platformFee.toFixed(2)}</span>
+          </div>
+          <div class="refund-row total">
+            <span>You receive:</span>
+            <span>€${c.hostReceives.toFixed(2)}</span>
+          </div>
+          <div style="margin-top: 8px; text-align: center;">
+            <span class="status-badge status-${c.status}">${c.status.toUpperCase().replace('_', ' ')}</span>
+          </div>
+        </div>
+        
+        <div class="action-buttons">
+          ${c.status === 'pending_approval' ? `
+            <button class="btn-small btn-approve" onclick="approveCancellation('${c._id}')">✓ Approve</button>
+            <button class="btn-small btn-reject" onclick="openRejectModal('${c._id}')">✕ Reject</button>
+          ` : `
+            <button class="btn-small" style="background: #f0f0f0; color: #999; cursor: default;">${c.status === 'refunded' ? '✓ Approved' : '✕ Rejected'}</button>
+          `}
+        </div>
+      </div>
+    `).join('');
+    
+    document.getElementById('cancellationsList').style.display = 'block';
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loadingContainer').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('emptyState').innerHTML = '<div class="empty-state-icon">❌</div><h3>Error loading cancellations</h3><p>' + err.message + '</p>';
+  }
+}
+
+function filterCancellations(status) {
+  currentFilter = status;
+  
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  loadCancellations();
+}
+
+async function approveCancellation(cancellationId) {
+  const token = localStorage.getItem('token');
+  
+  if (!confirm('Are you sure you want to approve this cancellation? The guest will receive €' + document.querySelector('[class*="refund-details"]).textContent.match(/€(\\d+\\.\\d+)/)?.[1] + ' refund.')) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/cancellations/${cancellationId}/approve`, {
+      method: 'PATCH',
+      headers: { 'Authorization': token }
+    });
+    
+    if (!res.ok) throw new Error('Failed to approve');
+    
+    alert('✅ Cancellation approved! Guest will receive their refund.');
+    loadCancellations();
+  } catch (err) {
+    console.error(err);
+    alert('Error: ' + err.message);
+  }
+}
+
+function openRejectModal(cancellationId) {
+  currentRejectingId = cancellationId;
+  document.getElementById('rejectionReason').value = '';
+  document.getElementById('rejectModal').classList.add('active');
+  document.getElementById('rejectModalBackdrop').classList.add('active');
+}
+
+function closeRejectModal() {
+  document.getElementById('rejectModal').classList.remove('active');
+  document.getElementById('rejectModalBackdrop').classList.remove('active');
+}
+
+async function submitReject() {
+  const token = localStorage.getItem('token');
+  const reason = document.getElementById('rejectionReason').value;
+  
+  try {
+    const res = await fetch(`/api/cancellations/${currentRejectingId}/reject`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      body: JSON.stringify({ rejectionReason: reason })
+    });
+    
+    if (!res.ok) throw new Error('Failed to reject');
+    
+    alert('✅ Cancellation rejected! The guest will be notified.');
+    closeRejectModal();
+    loadCancellations();
+  } catch (err) {
+    console.error(err);
+    alert('Error: ' + err.message);
+  }
+}
+
+// Close modal when clicking outside
+document.getElementById('rejectModalBackdrop').addEventListener('click', closeRejectModal);
+
+// Load on page load
+document.addEventListener('DOMContentLoaded', loadCancellations);
+
+// Refresh every 30 seconds
+setInterval(loadCancellations, 30000);
+
+function logout() {
+  localStorage.removeItem('token');
+  window.location.href = '/auth.html';
+}
+</script>
+
+</body>
+</html>

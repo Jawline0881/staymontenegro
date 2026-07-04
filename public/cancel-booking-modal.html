@@ -1,0 +1,411 @@
+<!-- cancel-booking-modal.html - Guest cancellation request modal -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cancel Booking</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+    
+    .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+    .modal-backdrop.active { display: block; }
+    
+    .modal-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .modal-container.active { display: block; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translate(-50%, calc(-50% + 30px)); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+    
+    .modal-header {
+      padding: 24px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h2 { font-size: 24px; color: #333; }
+    .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+    .modal-close:hover { color: #333; }
+    
+    .modal-content { padding: 24px; }
+    
+    .booking-info {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border-left: 4px solid #F2B800;
+    }
+    
+    .booking-info p { margin: 8px 0; font-size: 14px; color: #666; }
+    .booking-info strong { color: #333; }
+    
+    .policy-section {
+      background: #fff8e6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border-left: 4px solid #ffa500;
+    }
+    
+    .policy-title { font-weight: 600; color: #333; margin-bottom: 8px; }
+    .policy-text { font-size: 14px; color: #666; line-height: 1.5; }
+    
+    .refund-breakdown {
+      background: #f0fdf4;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border-left: 4px solid #06a77d;
+    }
+    
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    
+    .breakdown-row.total {
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      margin-top: 10px;
+      font-weight: 600;
+      color: #06a77d;
+      font-size: 16px;
+    }
+    
+    .refund-label { color: #666; }
+    .refund-value { font-weight: 600; color: #333; }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .form-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .form-textarea:focus {
+      outline: none;
+      border-color: #F2B800;
+      box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1);
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      padding: 24px;
+      border-top: 1px solid #eee;
+      background: #f9f9f9;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background: #F2B800;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #e6304d;
+    }
+    
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .warning-banner {
+      background: #fef2f2;
+      border-left: 4px solid #F2B800;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #7f1d1d;
+    }
+    
+    .loading { text-align: center; padding: 20px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #F2B800; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .error { background: #fef2f2; color: #7f1d1d; padding: 12px; border-radius: 8px; border-left: 4px solid #F2B800; font-size: 14px; }
+    .success { background: #f0fdf4; color: #166534; padding: 12px; border-radius: 8px; border-left: 4px solid #06a77d; font-size: 14px; }
+    
+    @media (max-width: 600px) {
+      .modal-container {
+        width: 95%;
+        max-height: 95vh;
+      }
+      
+      .modal-header, .modal-content, .modal-actions {
+        padding: 16px;
+      }
+      
+      .modal-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+    <link rel="stylesheet" href="color-utilities.css">
+    </head>
+<body>
+
+<div class="modal-backdrop" id="cancelModalBackdrop"></div>
+
+<div class="modal-container" id="cancelModal">
+  <div class="modal-header">
+    <h2>Cancel Booking</h2>
+    <button class="modal-close" onclick="closeCancelModal()">✕</button>
+  </div>
+  
+  <div class="modal-content">
+    <!-- Loading State -->
+    <div id="loadingState" style="display: none;">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top: 12px; color: #999;">Loading cancellation details...</p>
+      </div>
+    </div>
+    
+    <!-- Error State -->
+    <div id="errorState" style="display: none;">
+      <div class="error" id="errorMessage"></div>
+      <button class="btn btn-secondary" onclick="closeCancelModal()" style="width: 100%; margin-top: 16px;">Close</button>
+    </div>
+    
+    <!-- Main Content -->
+    <div id="mainContent" style="display: none;">
+      <div class="warning-banner">
+        ⚠️ Once cancelled, you'll receive a refund based on the cancellation policy below.
+      </div>
+      
+      <!-- Booking Details -->
+      <div class="booking-info">
+        <p><strong>Property:</strong> <span id="bookingProperty">-</span></p>
+        <p><strong>Check-in:</strong> <span id="bookingCheckIn">-</span></p>
+        <p><strong>Check-out:</strong> <span id="bookingCheckOut">-</span></p>
+        <p><strong>Total Paid:</strong> €<span id="bookingTotal">0</span></p>
+        <p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
+          <strong>Days until check-in:</strong> <span id="daysUntilCheckIn">-</span> days
+        </p>
+      </div>
+      
+      <!-- Cancellation Policy -->
+      <div class="policy-section">
+        <div class="policy-title">📋 Cancellation Policy</div>
+        <div class="policy-text" id="policyDescription">-</div>
+      </div>
+      
+      <!-- Refund Breakdown -->
+      <div class="refund-breakdown">
+        <div style="margin-bottom: 12px; font-weight: 600; color: #333;">💰 Your Refund</div>
+        <div class="breakdown-row">
+          <span class="refund-label">Original Price</span>
+          <span class="refund-value">€<span id="refundOriginal">0</span></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="refund-label">Refund Percentage</span>
+          <span class="refund-value"><span id="refundPercentage">0</span>%</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="refund-label">Refund Amount</span>
+          <span class="refund-value" style="color: #06a77d;">€<span id="refundAmount">0</span></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="refund-label">Platform Fee (5%)</span>
+          <span class="refund-value">-€<span id="refundFee">0</span></span>
+        </div>
+        <div class="breakdown-row total">
+          <span>You Receive</span>
+          <span style="font-size: 18px;">€<span id="finalRefund">0</span></span>
+        </div>
+      </div>
+      
+      <!-- Cancellation Reason -->
+      <div class="form-group">
+        <label class="form-label">Reason for Cancellation (optional)</label>
+        <textarea class="form-textarea" id="cancellationReason" placeholder="Tell the host why you're cancelling..."></textarea>
+      </div>
+      
+      <!-- Success Message (hidden) -->
+      <div id="successMessage" style="display: none;">
+        <div class="success">
+          ✅ Your cancellation request has been sent to the host. You'll receive a refund notification once they approve it.
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal Actions -->
+  <div class="modal-actions" id="modalActions" style="display: flex;">
+    <button class="btn btn-secondary" onclick="closeCancelModal()">Keep Booking</button>
+    <button class="btn btn-primary" id="confirmCancelBtn" onclick="confirmCancellation()">Confirm Cancellation</button>
+  </div>
+</div>
+
+<script>
+let currentBookingId = null;
+let cancellationData = null;
+
+async function openCancelModal(bookingId) {
+  currentBookingId = bookingId;
+  const modal = document.getElementById('cancelModal');
+  const backdrop = document.getElementById('cancelModalBackdrop');
+  
+  modal.classList.add('active');
+  backdrop.classList.add('active');
+  
+  // Load cancellation info
+  await loadCancellationInfo(bookingId);
+}
+
+function closeCancelModal() {
+  const modal = document.getElementById('cancelModal');
+  const backdrop = document.getElementById('cancelModalBackdrop');
+  
+  modal.classList.remove('active');
+  backdrop.classList.remove('active');
+  
+  // Reset form
+  document.getElementById('cancellationReason').value = '';
+  document.getElementById('successMessage').style.display = 'none';
+  document.getElementById('modalActions').style.display = 'flex';
+}
+
+async function loadCancellationInfo(bookingId) {
+  const token = localStorage.getItem('token');
+  
+  try {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('errorState').style.display = 'none';
+    
+    const res = await fetch(`/api/bookings/${bookingId}/cancellation-info`, {
+      headers: { 'Authorization': token }
+    });
+    
+    if (!res.ok) throw new Error(await res.text());
+    
+    cancellationData = await res.json();
+    
+    // Populate modal
+    document.getElementById('bookingProperty').textContent = cancellationData.listingTitle;
+    document.getElementById('bookingCheckIn').textContent = new Date(cancellationData.checkIn).toLocaleDateString('en-GB');
+    document.getElementById('bookingCheckOut').textContent = new Date(cancellationData.checkOut).toLocaleDateString('en-GB');
+    document.getElementById('bookingTotal').textContent = cancellationData.originalPrice;
+    document.getElementById('daysUntilCheckIn').textContent = cancellationData.daysBeforeCheckIn;
+    
+    document.getElementById('policyDescription').textContent = cancellationData.policyDescription;
+    
+    document.getElementById('refundOriginal').textContent = cancellationData.originalPrice;
+    document.getElementById('refundPercentage').textContent = cancellationData.breakdown.refundPercentage;
+    document.getElementById('refundAmount').textContent = cancellationData.breakdown.refundAmount;
+    document.getElementById('refundFee').textContent = cancellationData.breakdown.platformFee;
+    document.getElementById('finalRefund').textContent = cancellationData.breakdown.refundAmount;
+    
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+  } catch (err) {
+    console.error(err);
+    document.getElementById('errorMessage').textContent = 'Failed to load cancellation details: ' + (err.message || 'Unknown error');
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+  }
+}
+
+async function confirmCancellation() {
+  const token = localStorage.getItem('token');
+  const reason = document.getElementById('cancellationReason').value;
+  const btn = document.getElementById('confirmCancelBtn');
+  
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    
+    const res = await fetch(`/api/bookings/${currentBookingId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      body: JSON.stringify({ reason })
+    });
+    
+    if (!res.ok) throw new Error(await res.text());
+    
+    // Show success message
+    document.getElementById('mainContent').style.display = 'none';
+    document.getElementById('successMessage').style.display = 'block';
+    document.getElementById('modalActions').style.display = 'none';
+    
+    // Close modal after 3 seconds
+    setTimeout(() => {
+      closeCancelModal();
+      // Refresh page
+      window.location.reload();
+    }, 3000);
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = 'Confirm Cancellation';
+    alert('Error: ' + (err.message || 'Failed to cancel booking'));
+  }
+}
+
+// Close modal when clicking outside
+document.getElementById('cancelModalBackdrop').addEventListener('click', closeCancelModal);
+</script>
+
+</body>
+</html>

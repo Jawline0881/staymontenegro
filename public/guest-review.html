@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Guest — StayMontenegro</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .page-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #ff385c;
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+    .page-back:hover { text-decoration: underline; }
+
+    /* ── booking summary card ── */
+    .summary-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .summary-card .summary-img {
+      width: 72px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .summary-card .summary-info h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .summary-card .summary-info p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+
+    /* ── review form card ── */
+    .review-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 28px 24px;
+      margin-bottom: 16px;
+    }
+    .review-card h2 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 24px;
+      color: #222;
+    }
+
+    /* ── star rating ── */
+    .rating-group {
+      margin-bottom: 24px;
+    }
+    .rating-group .rating-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #444;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .stars {
+      display: flex;
+      gap: 6px;
+    }
+    .stars .star {
+      font-size: 34px;
+      cursor: pointer;
+      color: #ddd;
+      transition: color 0.1s, transform 0.1s;
+      user-select: none;
+      line-height: 1;
+    }
+    .stars.sub-stars .star { font-size: 26px; }
+    .stars .star:hover,
+    .stars .star.active { color: #ff385c; }
+    .stars .star:hover { transform: scale(1.15); }
+    .star-error {
+      color: #e5534b;
+      font-size: 13px;
+      margin-top: 6px;
+      display: none;
+    }
+
+    /* ── sub-ratings ── */
+    .sub-ratings {
+      border-top: 1px solid #f0f0f0;
+      padding-top: 20px;
+      margin-top: 4px;
+    }
+    .sub-ratings h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    .sub-rating-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .sub-rating-row .sub-name {
+      font-size: 15px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    /* ── comment ── */
+    .comment-group {
+      margin-top: 20px;
+    }
+    .comment-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #444;
+      margin-bottom: 8px;
+    }
+    .comment-group textarea {
+      width: 100%;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 120px;
+      transition: border-color 0.15s;
+      color: #222;
+    }
+    .comment-group textarea:focus {
+      outline: none;
+      border-color: #ff385c;
+    }
+    .char-count {
+      font-size: 12px;
+      color: #aaa;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    /* ── submit btn ── */
+    .submit-row {
+      margin-top: 24px;
+    }
+    .btn-submit {
+      width: 100%;
+      background: #ff385c;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover:not(:disabled) { background: #e0314f; }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* ── success state ── */
+    .success-state {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .success-state .success-icon { font-size: 56px; margin-bottom: 16px; }
+    .success-state h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+    .success-state p { font-size: 16px; color: #666; margin-bottom: 24px; line-height: 1.5; }
+    .success-state a { color: #ff385c; font-weight: 700; }
+
+    /* ── already-reviewed ── */
+    .already-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .already-card .icon { font-size: 48px; margin-bottom: 14px; }
+    .already-card p { font-size: 16px; color: #555; line-height: 1.6; }
+    .already-card a { color: #ff385c; font-weight: 700; }
+
+    /* ── empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 17px; line-height: 1.6; }
+    .empty-state a { color: #ff385c; font-weight: 600; }
+
+    @media (max-width: 600px) {
+      .container { padding: 16px; }
+      .stars .star { font-size: 30px; }
+      .summary-card { flex-direction: column; align-items: flex-start; }
+      .sub-rating-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Stay<span>Montenegro</span></a>
+  <div class="nav-links">
+    <a href="/host.html">Host Dashboard</a>
+    <a href="/messages.html" id="messagesLink" style="display:none">Messages <span id="msgBadge"></span></a>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container" style="max-width:640px; padding-top:28px;">
+  <a href="/host.html" class="page-back">← Back to Host Dashboard</a>
+
+  <div id="spinner" class="spinner"></div>
+  <div id="content"></div>
+</div>
+
+<script src="toast.js"></script>
+<script src="nav.js"></script>
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/auth.html'; }
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+
+  const params    = new URLSearchParams(location.search);
+  const bookingId = params.get('bookingId');
+
+  /* ── state ─────────────────────────────────────────────────────── */
+  let overallRating  = 0;
+  let subRatings     = { cleanliness: 0, communication: 0, houseRules: 0 };
+  let bookingData    = null;
+
+  /* ── helpers ────────────────────────────────────────────────────── */
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
+  }
+
+  /* ── star builder ───────────────────────────────────────────────── */
+  function buildStars(containerId, key, size = 'main') {
+    const wrap = document.getElementById(containerId);
+    if (!wrap) return;
+
+    for (let i = 1; i <= 5; i++) {
+      const s = document.createElement('span');
+      s.className = 'star';
+      s.textContent = '★';
+      s.dataset.val = i;
+
+      s.addEventListener('mouseenter', () => highlightStars(wrap, i));
+      s.addEventListener('mouseleave', () => {
+        const val = key === 'overall' ? overallRating : subRatings[key];
+        highlightStars(wrap, val);
+      });
+      s.addEventListener('click', () => {
+        const val = parseInt(s.dataset.val);
+        if (key === 'overall') {
+          overallRating = val;
+          const err = document.getElementById('overall-error');
+          if (err) err.style.display = 'none';
+        } else {
+          subRatings[key] = val;
+        }
+        highlightStars(wrap, val);
+      });
+
+      wrap.appendChild(s);
+    }
+  }
+
+  function highlightStars(wrap, upTo) {
+    wrap.querySelectorAll('.star').forEach((s, idx) => {
+      s.classList.toggle('active', idx < upTo);
+    });
+  }
+
+  /* ── render booking summary ─────────────────────────────────────── */
+  function renderSummary(booking) {
+    const listing = booking.listingId || {};
+    const guest   = booking.userId || {};
+    const img     = listing.image || 'https://placehold.co/140x110?text=Listing';
+    const name    = guest.name || guest.email || 'Guest';
+
+    return `
+      <div class="summary-card">
+        <img class="summary-img" src="${escHtml(img)}" alt="${escHtml(listing.title || 'Listing')}">
+        <div class="summary-info">
+          <h3>${escHtml(listing.title || 'Listing removed')}</h3>
+          <p>👤 ${escHtml(name)}</p>
+          <p>📅 ${fmtDate(booking.checkIn)} → ${fmtDate(booking.checkOut)}</p>
+        </div>
+      </div>`;
+  }
+
+  /* ── render form ─────────────────────────────────────────────────── */
+  function renderForm(booking) {
+    const el = document.getElementById('content');
+    const guest = booking.userId || {};
+    const guestName = guest.name || guest.email || 'Guest';
+
+    el.innerHTML = renderSummary(booking) + `
+      <div class="review-card">
+        <h2>⭐ Review ${escHtml(guestName)}</h2>
+
+        <!-- Overall -->
+        <div class="rating-group">
+          <span class="rating-label">Overall Rating <span style="color:#ff385c">*</span></span>
+          <div class="stars" id="stars-overall"></div>
+          <div class="star-error" id="overall-error">Please select a star rating.</div>
+        </div>
+
+        <!-- Sub-ratings -->
+        <div class="sub-ratings">
+          <h3>Optional sub-ratings</h3>
+
+          <div class="sub-rating-row">
+            <span class="sub-name">🧹 Cleanliness</span>
+            <div class="stars sub-stars" id="stars-cleanliness"></div>
+          </div>
+
+          <div class="sub-rating-row">
+            <span class="sub-name">💬 Communication</span>
+            <div class="stars sub-stars" id="stars-communication"></div>
+          </div>
+
+          <div class="sub-rating-row">
+            <span class="sub-name">📋 House Rules</span>
+            <div class="stars sub-stars" id="stars-houseRules"></div>
+          </div>
+        </div>
+
+        <!-- Comment -->
+        <div class="comment-group">
+          <label for="comment">Your Comments</label>
+          <textarea id="comment" placeholder="Tell other hosts about this guest…" maxlength="1200"
+            oninput="document.getElementById('char-count').textContent = this.value.length + '/1200'"></textarea>
+          <div class="char-count" id="char-count">0/1200</div>
+        </div>
+
+        <div class="submit-row">
+          <button class="btn-submit" id="submitBtn" onclick="submitReview()">Submit Review</button>
+        </div>
+      </div>`;
+
+    /* wire up stars after DOM insertion */
+    buildStars('stars-overall',       'overall');
+    buildStars('stars-cleanliness',   'cleanliness');
+    buildStars('stars-communication', 'communication');
+    buildStars('stars-houseRules',    'houseRules');
+  }
+
+  /* ── submit ──────────────────────────────────────────────────────── */
+  async function submitReview() {
+    if (!overallRating) {
+      const err = document.getElementById('overall-error');
+      if (err) err.style.display = 'block';
+      toast('Please choose a star rating', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    const payload = {
+      rating:  overallRating,
+      comment: document.getElementById('comment').value.trim(),
+      subRatings: {
+        cleanliness:   subRatings.cleanliness   || undefined,
+        communication: subRatings.communication || undefined,
+        houseRules:    subRatings.houseRules     || undefined
+      }
+    };
+
+    /* strip undefined sub-ratings */
+    Object.keys(payload.subRatings).forEach(k => {
+      if (!payload.subRatings[k]) delete payload.subRatings[k];
+    });
+
+    try {
+      const res  = await fetch(`/api/bookings/${bookingId}/guest-review`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body:    JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.status === 409 || data.alreadyReviewed) {
+        renderAlreadyReviewed();
+        return;
+      }
+
+      if (!res.ok) {
+        toast(data.error || 'Failed to submit review', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Submit Review';
+        return;
+      }
+
+      renderSuccess();
+
+    } catch {
+      toast('Network error. Please try again.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Submit Review';
+    }
+  }
+
+  /* ── success ─────────────────────────────────────────────────────── */
+  function renderSuccess() {
+    document.getElementById('content').innerHTML = `
+      <div class="success-state">
+        <div class="success-icon">🎉</div>
+        <h2>Review Submitted!</h2>
+        <p>Your review has been saved. It helps the community know about this guest.</p>
+        <a href="/host.html" class="btn" style="display:inline-block;padding:12px 28px;background:#ff385c;color:white;border-radius:10px;font-weight:700;font-size:15px">
+          ← Back to Host Dashboard
+        </a>
+      </div>`;
+  }
+
+  /* ── already reviewed ────────────────────────────────────────────── */
+  function renderAlreadyReviewed() {
+    document.getElementById('content').innerHTML = `
+      <div class="already-card">
+        <div class="icon">✅</div>
+        <p>You've already reviewed this guest.<br>
+           <a href="/host.html">← Back to Host Dashboard</a></p>
+      </div>`;
+  }
+
+  /* ── load booking from host bookings ────────────────────────────── */
+  async function loadBooking() {
+    if (!bookingId) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🤔</div>
+          <p>No booking specified.</p>
+          <p><a href="/host.html">← Back to Host Dashboard</a></p>
+        </div>`;
+      return;
+    }
+
+    try {
+      const res  = await fetch('/api/host/bookings', {
+        headers: { Authorization: token }
+      });
+
+      document.getElementById('spinner').style.display = 'none';
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">⚠️</div>
+            <p>${escHtml(err.error || 'Failed to load booking.')}</p>
+          </div>`;
+        return;
+      }
+
+      const bookings = await res.json();
+      const booking  = bookings.find(b => b._id === bookingId);
+
+      if (!booking) {
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">🔍</div>
+            <p>Booking not found or you don't have access.</p>
+            <p><a href="/host.html">← Back to Host Dashboard</a></p>
+          </div>`;
+        return;
+      }
+
+      bookingData = booking;
+
+      /* check if already reviewed */
+      if (booking.guestReview && booking.guestReview.rating) {
+        renderAlreadyReviewed();
+        return;
+      }
+
+      renderForm(booking);
+
+    } catch {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">⚠️</div>
+          <p>Network error. Please try again.</p>
+        </div>`;
+    }
+  }
+
+  loadBooking();
+</script>
+
+</body>
+</html>
