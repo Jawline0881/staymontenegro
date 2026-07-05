@@ -15,21 +15,21 @@
     .reviews-section h2 { font-size: 20px; font-weight: 800; margin-bottom: 16px; }
     .review-card { background: #f9f9f9; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
     .review-card .reviewer { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-    .review-card .review-stars { color: #f5a623; margin-bottom: 6px; font-size: 15px; }
+    .review-card .review-stars { color: #D4AF37; margin-bottom: 6px; font-size: 15px; }
     .review-card .review-text { color: #555; font-size: 14px; line-height: 1.6; }
     .review-card .review-date { color: #bbb; font-size: 12px; margin-top: 6px; }
     .write-review { background: white; border: 1.5px solid #e0e0e0; border-radius: 14px; padding: 22px; margin-top: 20px; }
     .write-review h3 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
     .star-picker { display: flex; gap: 6px; margin-bottom: 14px; }
     .star-picker span { font-size: 30px; cursor: pointer; color: #ddd; transition: color 0.1s; }
-    .star-picker span.active { color: #f5a623; }
+    .star-picker span.active { color: #D4AF37; }
     .avg-rating-display { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
-    .avg-stars { color: #f5a623; font-size: 20px; }
+    .avg-stars { color: #D4AF37; font-size: 20px; }
     /* F7 gallery */
     .gallery-main { position: relative; }
     .gallery-thumbs { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
     .gallery-thumbs img { width:78px; height:58px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid transparent; }
-    .gallery-thumbs img.active { border-color:#ff385c; }
+    .gallery-thumbs img.active { border-color:#A6192E; }
     .gallery-nav { position:absolute; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.9); border:none; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.25); }
     .gallery-nav.prev { left:12px; } .gallery-nav.next { right:12px; }
     .fav-detail { position:absolute; top:14px; right:14px; width:44px; height:44px; border-radius:50%; border:none; background:rgba(255,255,255,.92); font-size:22px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2); }
@@ -264,12 +264,12 @@
       if (q.breakdown && q.breakdown.length > 1) {
         bd.innerHTML = q.breakdown.map(s =>
           `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
-             <span>€${s.price} × ${s.nights} night${s.nights !== 1 ? 's' : ''}${s.label && s.label !== 'Base' ? ` <span style="color:#ff385c">(${s.label})</span>` : ''}</span>
+             <span>€${s.price} × ${s.nights} night${s.nights !== 1 ? 's' : ''}${s.label && s.label !== 'Base' ? ` <span style="color:#A6192E">(${s.label})</span>` : ''}</span>
              <span>€${s.subtotal}</span>
            </div>`).join('');
         bd.style.display = 'block';
       } else if (q.breakdown && q.breakdown.length === 1 && q.breakdown[0].label !== 'Base') {
-        bd.innerHTML = `<div style="color:#ff385c;font-weight:600">${q.breakdown[0].label} rate: €${q.breakdown[0].price}/night</div>`;
+        bd.innerHTML = `<div style="color:#A6192E;font-weight:600">${q.breakdown[0].label} rate: €${q.breakdown[0].price}/night</div>`;
         bd.style.display = 'block';
       } else { bd.style.display = 'none'; }
     } catch {
@@ -325,7 +325,7 @@
       }).addTo(map);
 
       const icon = L.divIcon({
-        html: `<div style="background:#ff385c;color:white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🏠</div>`,
+        html: `<div style="background:#A6192E;color:white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🏠</div>`,
         iconSize: [36, 36], iconAnchor: [18, 18], className: '',
       });
       L.marker([lat, lon], { icon }).addTo(map).bindPopup(`<strong>${listing.title}</strong><br>${city}`).openPopup();

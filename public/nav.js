@@ -20,7 +20,7 @@
       const { count } = await res.json();
       if (count > 0) {
         badge.textContent = count;
-        badge.style.cssText = 'display:inline-block;background:#ff385c;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px;';
+        badge.style.cssText = 'display:inline-block;background:#A6192E;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px;';
       } else {
         badge.textContent = '';
         badge.style.display = 'none';

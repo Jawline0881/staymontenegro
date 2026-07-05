@@ -40,9 +40,9 @@
       font-size: 13px; font-weight: 600; cursor: pointer; background: white;
       transition: all 0.15s; color: #444;
     }
-    .amenity-chip:hover  { border-color: #ff385c; color: #ff385c; }
-    .amenity-chip.active { border-color: #ff385c; background: #fff0f3; color: #ff385c; }
-    .star { color: #f5a623; font-size: 13px; }
+    .amenity-chip:hover  { border-color: #A6192E; color: #A6192E; }
+    .amenity-chip.active { border-color: #A6192E; background: #fff0f3; color: #A6192E; }
+    .star { color: #D4AF37; font-size: 13px; }
     .card-rating { font-size: 13px; color: #555; margin-bottom: 8px; }
   </style>
 </head>
@@ -102,7 +102,7 @@
       <button class="btn-secondary" onclick="clearFilters()" style="padding:9px 16px;font-size:13px">Clear filters</button>
     </div>
   </div>
-  <div id="dateNote" style="display:none; margin:-12px 0 20px; font-size:13px; color:#ff385c; font-weight:600;"></div>
+  <div id="dateNote" style="display:none; margin:-12px 0 20px; font-size:13px; color:#A6192E; font-weight:600;"></div>
 
   <!-- Amenity chips -->
   <div class="amenity-filters" id="amenityChips"></div>
@@ -220,11 +220,11 @@
     const bounds = [];
     pts.forEach(l => {
       const icon = L.divIcon({
-        html: `<div style="background:#ff385c;color:white;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3)">€${l.price}</div>`,
+        html: `<div style="background:#A6192E;color:white;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3)">€${l.price}</div>`,
         iconSize: [40, 24], iconAnchor: [20, 12], className: '',
       });
       const m = L.marker([l.lat, l.lng], { icon }).addTo(mapInstance)
-        .bindPopup(`<a href="/listing.html?id=${l._id}" style="font-weight:700;color:#ff385c">${l.title}</a><br>${l.city} · €${l.price}/night`);
+        .bindPopup(`<a href="/listing.html?id=${l._id}" style="font-weight:700;color:#A6192E">${l.title}</a><br>${l.city} · €${l.price}/night`);
       mapMarkers.push(m);
       bounds.push([l.lat, l.lng]);
     });
@@ -292,7 +292,7 @@
         let priceHtml;
         if (item.quote) {
           const seasonal = item.quote.avgNightly !== item.price;
-          priceHtml = `<p class="card-price">€${item.quote.total} <span>total · ${item.quote.nights} night${item.quote.nights !== 1 ? 's' : ''}</span>${seasonal ? ' <span style="color:#ff385c">• seasonal</span>' : ''}</p>`;
+          priceHtml = `<p class="card-price">€${item.quote.total} <span>total · ${item.quote.nights} night${item.quote.nights !== 1 ? 's' : ''}</span>${seasonal ? ' <span style="color:#A6192E">• seasonal</span>' : ''}</p>`;
         } else {
           priceHtml = `<p class="card-price">€${item.price} <span>/ night</span></p>`;
         }
