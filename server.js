@@ -191,7 +191,7 @@ function cancellationEmail(userEmail, listing, booking, refundAmount) {
 
 // ─── MongoDB ──────────────────────────────────────────────────────────────────
 if (require.main === module && process.env.NODE_ENV !== 'test') {
-  mongoose.connect(MONGO_URL, { family: 4 })
+  mongoose.connect(MONGO_URL, { family: 4, minPoolSize: 2, maxPoolSize: 10, heartbeatFrequencyMS: 2000, serverSelectionTimeoutMS: 20000, socketTimeoutMS: 45000 })
     .then(() => console.log('✅ MongoDB connected, readyState=', mongoose.connection.readyState))
     .catch(err => console.error('❌ MongoDB error:', err.message));
 
