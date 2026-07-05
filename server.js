@@ -192,8 +192,13 @@ function cancellationEmail(userEmail, listing, booking, refundAmount) {
 // ─── MongoDB ──────────────────────────────────────────────────────────────────
 if (require.main === module && process.env.NODE_ENV !== 'test') {
   mongoose.connect(MONGO_URL, { family: 4 })
-    .then(() => console.log('✅ MongoDB connected'))
+    .then(() => console.log('✅ MongoDB connected, readyState=', mongoose.connection.readyState))
     .catch(err => console.error('❌ MongoDB error:', err.message));
+
+  mongoose.connection.on('connected', () => console.log('🔵 mongoose event: connected'));
+  mongoose.connection.on('disconnected', () => console.log('🔴 mongoose event: disconnected'));
+  mongoose.connection.on('reconnected', () => console.log('🟢 mongoose event: reconnected'));
+  mongoose.connection.on('error', (e) => console.log('🔴 mongoose event: error', e.message));
 }
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -769,6 +774,7 @@ app.post('/api/resend-verification', authMiddleware, async (req, res) => {
 
 // ─── Listings Routes ──────────────────────────────────────────────────────────
 app.get('/api/listings', async (req, res) => {
+  console.log('📥 /api/listings hit, mongoose readyState=', mongoose.connection.readyState);
   try {
     const { city, minPrice, maxPrice, amenities, guests, checkIn, checkOut } = req.query;
     const filter = {};
